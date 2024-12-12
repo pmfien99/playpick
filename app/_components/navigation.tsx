@@ -414,10 +414,10 @@ const Navigation = ({ theme }: NavigationProps) => {
           </div>
         </div>
       )}
-
+{/* 
       <div className="absolute bottom-0 left-0 right-0 w-full h-[100vh] z-[9999] bg-[#000000B2]">
-        <p>Hello</p>
-      </div>
+        <p>sHello</p>
+      </div> */}
     </>
   );
 };

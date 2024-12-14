@@ -7,7 +7,7 @@ import {
   getMatchPlays,
 } from "@/app/_lib/supabase/database";
 import { useEffect, useState } from "react";
-import { Drive, PlayState } from "@/app/_types/types";
+import { PlayState } from "@/app/_types/types";
 import Image from "next/image";
 import { useForm, Controller } from "react-hook-form";
 import { useGame } from "@/app/_context/gameContext";
@@ -49,11 +49,11 @@ const Game = () => {
     }
   };
 
-  const getTeamName = (drive: Drive) => {
-    if (drive.team_id === matchData?.homeTeamId) {
-      return matchData.homeTeamName;
-    } else if (drive.team_id === matchData?.awayTeamId) {
-      return matchData.awayTeamName;
+  const getTeamName = () => {
+    if (matchData?.possessionId === matchData?.homeTeamId) {
+      return matchData?.homeTeamName;
+    } else if (matchData?.possessionId === matchData?.awayTeamId) {
+      return matchData?.awayTeamName;
     }
     return "Unknown Team";
   };

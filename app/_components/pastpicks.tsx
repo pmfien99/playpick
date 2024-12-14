@@ -1,10 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import { useGame } from "@/app/_context/gameContext";
-import { useUser } from "@/app/_context/usercontext";
-import { createClient } from "@/app/_lib/supabase/client";
-
 type PastPick = {
   pick_type: string;
   pick_distance: string;
@@ -14,11 +9,8 @@ type PastPick = {
   is_ignored: boolean;
 };
 
-const supabaseClient = createClient();
 
 const PastPicks = () => {
-  const { isMatchActive, matchData, play_state } = useGame();
-  const { user } = useUser();
 
 
   return (

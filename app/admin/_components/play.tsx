@@ -9,10 +9,9 @@ import { useGame } from "@/app/_context/gameContext";
 
 interface PlayProps {
   play_id: string;
-  play_number: number;
-  color?: string;
   play_state: string;
   created_at: string;
+  play_number: number;
 }
 
 const FormSchema = z.object({
@@ -21,24 +20,25 @@ const FormSchema = z.object({
 });
 
 const Play = (props: PlayProps) => {
+  const { matchData } = useGame();
   const [dropdownOpen, setDropdownOpen] = useState<string | null>(null);
   const [fieldsDisabled, setFieldsDisabled] = useState(false);
-  const { driveId } = useGame();
-
-  const { color = "#FFFFFF" } = props;
 
   const typeOptions = [
     { label: "Pass", value: "pass" }, 
-    { label: "Run", value: "run" }, 
-    { label: "Punt", value: "punt" }, 
-    { label: "Sack", value: "sack" }, 
+    { label: "Run", value: "run" },
+    { label: "Incompletion", value: "incompletion" }, 
+    // PUSH PLAYS for is_ignored 
+    { label: "Punt", value: "punt" },
+    { label: "Spike", value: "spike" }, 
+    { label: "Knee", value: "knee" },
     { label: "FG", value: "field goal" }, 
     { label: "Penalty", value: "penalty" },
-    { label: "Knee", value: "knee" },
-    { label: "Spike", value: "spike" }, 
     { label: "No Play", value: "no-play" },
-    { label: "Timeout", value: "timeout" },
+    // AUTO LOSE PLAYS 
     { label: "Other", value: "other" }, 
+    { label: "Sack", value: "sack" }, 
+    { label: "Interception", value: "interception" },
   ];
 
   const distanceOptions = [
@@ -48,8 +48,9 @@ const Play = (props: PlayProps) => {
   ];
 
   const onSubmit = (data: z.infer<typeof FormSchema>) => {
-    if (props.play_id && driveId) {
-      logPlayStateUpdateScores(props.play_id, driveId, data.play_type, data.play_distance)
+    if (props.play_id) {
+      console.log("updating scores and stuff?");
+      logPlayStateUpdateScores(props.play_id, matchData?.matchId || "", data.play_type, data.play_distance)
         .then(() => {
           return;
         })
@@ -77,9 +78,6 @@ const Play = (props: PlayProps) => {
     if (props.play_id) {
       try {
         await startPlay(props.play_id);
-        if (driveId) {
-          await createPlay(driveId);
-        }
       } catch (error) {
         console.error("Error starting play:", error);
       }
@@ -102,7 +100,7 @@ const Play = (props: PlayProps) => {
   if (props.play_state === "play_closed") {
     playStateButton = (
       <div className="w-full text-sm text-center justify-center items-center text-cpb-baseblack uppercase py-3">
-        <p>Play Closed</p>
+        <p>Closed</p>
       </div>
     );
   } else if (props.play_state === "play_open") {
@@ -126,10 +124,10 @@ const Play = (props: PlayProps) => {
   }
 
   return (
-    <div data-play-id={props.play_id} className="grid grid-cols-[1fr_2fr_10fr] gap-8 items-center">
+    <div data-play-id={props.play_id} data-play-state={props.play_state} className="grid grid-cols-[1fr_2fr_10fr] gap-8 items-center">
       <p className="font-normal text-xl"># {props.play_number}</p>
       {playStateButton}
-      <form onSubmit={handleSubmit(onSubmit)} className={`grid grid-cols-4 gap-x-4 gap-y-0 ${props.play_state === "play_open" ? "opacity-50 pointer-events-none" : ""}`}>
+      <form onSubmit={handleSubmit(onSubmit)} className={`grid grid-cols-3 gap-x-4 gap-y-0 ${props.play_state === "play_open" ? "opacity-50 pointer-events-none" : ""}`}>
             <Controller
               name="play_type"
               control={control}

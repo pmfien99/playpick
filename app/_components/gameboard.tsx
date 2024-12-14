@@ -4,21 +4,21 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useGame } from "../_context/gameContext";
 import { useUser } from "../_context/usercontext";
-import {
-  getUserScore,
-  playerSubmitPlay,
-  undoPlay,
-} from "../_lib/supabase/database";
+import { playerSubmitPlay, undoPlay } from "../_lib/supabase/database";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { usePastPicks } from "../_context/pastPicksContext";
-import CountUp from "react-countup";
+import Balance from "./atoms/balance";
+import GameDisplay from "./atoms/gameDisplay";
+import SvgCoin from "./icons/svgCoin";
+import useSound from 'use-sound';
+
 
 const FormSchema = z.object({
   playType: z.enum(["pass", "run"]),
   playLength: z.enum(["short", "med", "long"]),
+  playBet: z.enum(["1", "2", "3", "4", "5", "6"]),
 });
 
 type FormData = z.infer<typeof FormSchema>;
@@ -48,14 +48,16 @@ const ToggleButton = <T extends string>({
     type="button"
     onClick={onClick}
     aria-pressed={isSelected}
-    className={`rounded-full flex-1 py-2 text-2xl font-bold focus:outline-none transition-colors duration-200 ${
+    className={`rounded-full flex-1 py-2 text-[20px] font-regular focus:outline-none transition-colors duration-200 ${
       isSelected ? "bg-cpb-darkgreen text-white" : ""
     }`}
   >
     <div className="flex flex-col items-center">
       <span>{option.label}</span>
       {option.subtext && (
-        <span className="text-xs text-cpb-basewhite opacity-85 font-chakra">{option.subtext}</span>
+        <span className="text-xs text-cpb-basewhite opacity-85 font-chakra">
+          {option.subtext}
+        </span>
       )}
     </div>
   </button>
@@ -83,30 +85,67 @@ const ToggleButtonGroup = <T extends string>({
 
 const supabaseClient = createClient();
 
-const Gameboard = () => {
-  const { refreshPastPicks } = usePastPicks();
-  const { user } = useUser();
-  const { isMatchActive, matchData, driveId, playId, driveTeam } = useGame();
-  const [score, setScore] = useState<number>(0);
-  const [prevScore, setPrevScore] = useState<number>(0);
-  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+const odds = {
+  "short-run": 2,
+  "short-pass": 3,
+  "med-run": 10,
+  "med-pass": 7,
+  "long-run": 50,
+  "long-pass": 20,
+};
 
-  const { control, handleSubmit, setValue } = useForm<FormData>({
+const betValues = {
+  "1": 10,
+  "2": 25,
+  "3": 50,
+  "4": 100,
+  "5": 250,
+  "6": 500,
+};
+
+const formatNumber = (num: number): string => {
+  if (num >= 1000) {
+    const rounded = num / 1000;
+    return Number.isInteger(rounded) ? `${rounded}k` : `${rounded.toFixed(1)}k`;
+  }
+  return num.toString();
+};
+
+const Gameboard = () => {
+  const { user } = useUser();
+  const { isMatchActive, matchData, play_state, play_id } = useGame();
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [playSubmitSound] = useSound('/sfx/submit.wav');
+
+  const calculatePayout = (playType: "run" | "pass", playLength: "short" | "med" | "long", playBet: number) => {
+    const key = `${playLength}-${playType}` as keyof typeof odds;
+    const multiplier = odds[key] || 0;
+    return playBet * multiplier;
+  };
+
+  const { control, handleSubmit, setValue, watch } = useForm<FormData>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
       playType: "run",
       playLength: "short",
+      playBet: "1",
     },
   });
 
+  const playType = watch("playType");
+  const playLength = watch("playLength");
+  const playBetValue = betValues[watch("playBet")];
+  const winAmount = calculatePayout(playType, playLength, playBetValue);
+
+
+
   const checkSubmissionState = async () => {
-    if (matchData?.matchId && driveId && playId) {
+    if (matchData?.matchId && play_id) {
       const { data, error } = await supabaseClient
         .from("player_picks")
         .select("*")
         .eq("match_id", matchData.matchId)
-        .eq("drive_id", driveId)
-        .eq("play_id", playId)
+        .eq("play_id", play_id)
         .eq("player_id", user.player_id)
         .maybeSingle();
 
@@ -126,50 +165,29 @@ const Gameboard = () => {
   };
 
   const handleUndo = async () => {
-    if (matchData?.matchId && driveId && playId) {
-      await undoPlay(matchData.matchId, driveId, user.player_id, playId);
+    if (matchData?.matchId && play_id) {
+      await undoPlay(matchData.matchId, user.player_id, play_id);
       await fetchSubmissionStatus();
-      await refreshPastPicks(user.player_id, driveId);
     }
   };
 
   useEffect(() => {
     fetchSubmissionStatus();
-    fetchUserScore();
-  }, [matchData, driveId, playId, user.player_id]);
+  }, [matchData, play_id, user.player_id]);
 
   const onSubmit = async (data: FormData) => {
     const matchId = matchData?.matchId;
-    if (matchId && driveId && playId) {
+    if (matchId && play_id) {
       await playerSubmitPlay(
         matchId,
-        driveId,
         user.player_id,
-        playId,
+        play_id,
         data.playType,
-        data.playLength
+        data.playLength,
+        Number(data.playBet)
       );
+      playSubmitSound()
       await fetchSubmissionStatus();
-    }
-  };
-
-  const fetchUserScore = async () => {
-    try {
-      if (!isMatchActive) {
-        setScore(0);
-      } else {
-        if (driveId != null && user.player_id != null) {
-          const userScore = await getUserScore(driveId, user.player_id);
-          if (userScore != null) {
-            setPrevScore(score);
-            setScore(parseInt(userScore.points, 10)); 
-          } else {
-            setScore(0);
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching user score:", error);
     }
   };
 
@@ -187,127 +205,21 @@ const Gameboard = () => {
       )
       .subscribe();
 
-    const playerScoreSubscription = supabaseClient
-      .channel("player_score")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "scores",
-          filter: `player_id=eq.${user.player_id}`,
-        },
-        async (payload: any) => {
-          if (payload.new) {
-            setPrevScore(score);
-            setScore(parseInt(payload.new.points, 10));
-          }
-        }
-      )
-      .subscribe();
-
     return () => {
       supabaseClient.removeChannel(playerPicksSubscription);
-      supabaseClient.removeChannel(playerScoreSubscription);
     };
   }, [user.player_id]);
 
-  useEffect(() => {
-    if (driveId && driveId != null) {
-      try {
-        fetchUserScore();
-      } catch (error) {
-        console.error("Error fetching user score HERE HERE HERE:", error);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    setScore(0);
-  }, [driveId]);
-
-  const isFormActive = isMatchActive && driveId != null;
+  const isFormActive = isMatchActive && play_id != null;
 
   return (
     <div className="font-flick">
+      <Balance />
+      <GameDisplay />
       <form
         className="w-full text-cpb-basewhite flex flex-col justify-center items-center px-10 py-5 min-h-[290px]"
         onSubmit={handleSubmit(onSubmit)}
       >
-        <div className="flex flex-row w-full justify-between mb-8">
-          <div className="w-16 h-16 relative mt-3">
-            <Image
-              width={64}
-              height={64}
-              src={
-                isMatchActive
-                  ? matchData?.awayTeamLogo || "/placeholder.png"
-                  : "/placeholder.png"
-              }
-              alt={
-                isMatchActive
-                  ? matchData?.awayTeamName || "away-logo"
-                  : "away-logo"
-              }
-              className="w-full h-full rounded-full object-contain border-2 border-white bg-cpb-basewhite"
-            />
-            {driveTeam === matchData?.awayTeamId && (
-              <Image
-                src="/possession_indicator.png"
-                width={17}
-                height={17}
-                alt="possession-indicator"
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-[-8px]"
-              />
-            )}
-          </div>
-          <div className="flex flex-col justify-center items-center">
-            <h1 className="font-bold uppercase text-sm text-center">
-              {isMatchActive
-                ? driveId == null
-                  ? "NO DRIVE" 
-                  : driveTeam === matchData?.homeTeamId
-                  ? `${matchData?.homeTeamName} drive`
-                  : `${matchData?.awayTeamName} drive`
-                : "Game Over"}
-            </h1>
-            {isMatchActive && driveId != null ? (
-              <p className="text-[40px] font-bold">
-                <CountUp start={prevScore} end={score} duration={1} />{" "}
-                <span className="font-normal">pts</span>
-              </p>
-            ) : (
-              <p className="text-[40px] font-bold">Ended</p>
-            )}
-          </div>
-          <div className="w-16 h-16 relative mt-3">
-            <Image
-              src={
-                isMatchActive
-                  ? matchData?.homeTeamLogo || "/placeholder.png"
-                  : "/placeholder.png"
-              }
-              width={64}
-              height={64}
-              alt={
-                isMatchActive
-                  ? matchData?.homeTeamName || "team-logo"
-                  : "team-logo"
-              }
-              className="w-full h-full rounded-full object-contain border-2 border-white bg-cpb-basewhite"
-            />
-            {driveTeam === matchData?.homeTeamId && (
-              <Image
-                src="/possession_indicator.png"
-                width={17}
-                height={17}
-                alt="possession-indicator"
-                className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-[-8px]"
-              />
-            )}
-          </div>
-        </div>
-
         <div
           className={`flex flex-col gap-4 min-w-full ${
             !isFormActive || isSubmitted
@@ -346,18 +258,18 @@ const Gameboard = () => {
             )}
           />
 
-<Controller
-            name="playLength"
+          <Controller
+            name="playBet"
             control={control}
             render={({ field }) => (
               <ToggleButtonGroup
                 options={[
-                  { value: "short", label: "Short", subtext: "< 5yds" },
-                  { value: "med", label: "Medium", subtext: "5-20yds" },
-                  { value: "long", label: "Long", subtext: "20< yds" },
-                  { value: "long", label: "Long", subtext: "20< yds" },
-                  { value: "long", label: "Long", subtext: "20< yds" },
-                  { value: "long", label: "Long", subtext: "20< yds" },
+                  { value: "1", label: "10" },
+                  { value: "2", label: "25" },
+                  { value: "3", label: "50" },
+                  { value: "4", label: "100" },
+                  { value: "5", label: "250" },
+                  { value: "6", label: "500" },
                 ]}
                 selectedOption={field.value}
                 onChange={field.onChange}
@@ -383,9 +295,35 @@ const Gameboard = () => {
             ) : (
               <button
                 type="submit"
-                className="bg-cpb-darkgreen uppercase text-lg font-bold w-full border-cpb-darkgreen border-2 rounded-xl py-3 shadow-lg"
+                className="bg-cpb-darkgreen uppercase text-lg font-bold w-full border-cpb-darkgreen border-2 rounded-xl py-4 px-2 shadow-lg flex flex-row justify-center gap-4 items-center"
               >
-                SUBMIT PICK
+                <div className="flex flex-row items-top gap-2">
+                  <div className="flex flex-col items-center mb-auto gap-1">
+                    <p className="leading-none [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]">BET</p>
+                    <div className="ml-auto w-4 h-4">
+                      <SvgCoin />
+                    </div>
+                  </div>
+                  <p className="text-cpb-basewhite text-[52px] leading-[80%] [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]">
+                    {formatNumber(playBetValue)}
+                  </p>
+                </div>
+
+                <div className="uppercase text-2xl font-normal py-1 border-[#EAE107] border-[.4px] rounded-xl px-4">
+                  SUBMIT
+                </div>
+
+                <div className="flex flex-row items-top gap-2">
+                  <div className="flex flex-col items-center mb-auto gap-1">
+                    <p className="leading-none [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]">WIN</p>
+                    <div className="ml-auto w-4 h-4">
+                      <SvgCoin />
+                    </div>
+                  </div>
+                  <p className="text-cpb-basewhite text-[52px] leading-[80%] [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]">
+                    {formatNumber(winAmount)}
+                  </p>
+                </div>
               </button>
             )
           ) : (
@@ -395,34 +333,7 @@ const Gameboard = () => {
           )}
         </div>
       </form>
-      <div className="w-full px-10 pb-5">
-        {isSubmitted ? (
-          <button
-            className="uppercase text-base font-bold opacity-100 py-3 border-cpb-basewhite border-2 rounded-xl text-center w-full bg-cpb-basewhite text-cpb-baseblack flex flex-row justify-center items-center gap-2"
-            onClick={handleUndo}
-          >
-            Undo
-            <Image
-              width={20}
-              height={20}
-              src="/undo-icon-dark.svg"
-              alt="undo"
-              className="w-5 h-5"
-            />
-          </button>
-        ) : (
-          <div className="uppercase text-base font-bold opacity-50 py-3 border-cpb-basewhite border-2 rounded-xl text-center w-full pointer-events-none flex flex-row justify-center items-center gap-2">
-            Undo
-            <Image
-              width={20}
-              height={20}
-              src="/undo-icon.svg"
-              alt="undo"
-              className="w-5 h-5"
-            />
-          </div>
-        )}
-      </div>
+      <div className="w-full px-10 pb-5"></div>
     </div>
   );
 };

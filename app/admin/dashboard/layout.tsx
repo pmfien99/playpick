@@ -11,13 +11,13 @@ export default function RootLayout({
 }) {
   return (
     <GameProvider>
-          <div className="min-w-full">
-            <Navigation></Navigation>
-            <div className="flex flex-row max-h-[calc(100vh-5rem)] overflow-hidden">
-              <Sidebar></Sidebar>
-              {children}
-            </div>
+        <div className="min-w-full">
+          <Navigation></Navigation>
+          <div className="flex flex-row max-h-[calc(100vh-5rem)] overflow-hidden">
+            <Sidebar></Sidebar>
+            {children}
           </div>
+        </div>
     </GameProvider>
   );
 }

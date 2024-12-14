@@ -7,7 +7,6 @@ const PlayView = () => {
   return (
     <div>
       <Gameboard />
-      <PastPicks />
     </div>
   );
 };

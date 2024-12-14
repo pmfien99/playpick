@@ -2,37 +2,52 @@
 
 import {
   endAllMatches,
-  createDrive,
-  getMatchDrives,
-  endAllDrives,
   createPlay,
+  setDown,
+  getMatchPlays,
 } from "@/app/_lib/supabase/database";
 import { useEffect, useState } from "react";
 import { Drive, PlayState } from "@/app/_types/types";
-import DriveBlock from "./driveblock";
 import Image from "next/image";
 import { useForm, Controller } from "react-hook-form";
 import { useGame } from "@/app/_context/gameContext";
+import { setPossession } from "@/app/_lib/supabase/database";
+import Play from "./play";
 
 const Game = () => {
-  const [gameDrives, setGameDrives] = useState<Drive[]>([]);
-  const { matchData, driveId, playId } = useGame();
+  const { matchData, isMatchActive, play_state } = useGame();
   const [showPopup, setShowPopup] = useState(false);
+  const [isCooldown, setIsCooldown] = useState(false);
+  const [plays, setPlays] = useState<PlayData[]>([]);
   const { control, handleSubmit, setValue } = useForm({
     defaultValues: {
       selectedTeamId: matchData?.homeTeamId || "",
     },
   });
 
+  interface PlayData {
+    play_id: string;
+    play_state: PlayState;
+    created_at: string;
+    play_number: number;
+  }
+
   useEffect(() => {
-    const fetchDrives = async () => {
-      if (matchData?.matchId === null) return;
-      if (matchData?.matchId === undefined) return;
-      const drives: Drive[] = await getMatchDrives(matchData?.matchId);
-      setGameDrives(drives);
-    };
-    fetchDrives();
-  }, [matchData, driveId]);
+    fetchPlays();
+  }, [matchData]);
+
+  const fetchPlays = async () => {
+    try {
+      const playsData = await getMatchPlays(matchData?.matchId || "");
+      const numberedPlays = playsData.map((play, index) => ({
+        ...play,
+        play_number: playsData.length - index,
+      }));
+      setPlays(numberedPlays as PlayData[]);
+    } catch (error) {
+      console.error("Error fetching plays:", error);
+    }
+  };
 
   const getTeamName = (drive: Drive) => {
     if (drive.team_id === matchData?.homeTeamId) {
@@ -49,7 +64,6 @@ const Game = () => {
 
   const handleConfirm = async () => {
     await endAllMatches();
-    await endAllDrives();
     setShowPopup(false);
   };
 
@@ -57,146 +71,136 @@ const Game = () => {
     setShowPopup(false);
   };
 
-  const handleNewDriveClick = async (data: { selectedTeamId: string }) => {
-    if (!matchData?.matchId) {
-      console.error("Match ID is undefined");
-      return;
-    }
-    try {
-      const newDrive = await createDrive(
-        matchData.matchId,
-        data.selectedTeamId
-      );
-      if (newDrive) {
-        await createPlay(newDrive[0].drive_id);
-      } else {
-        console.error("Failed to create a new drive");
-      }
-    } catch (error) {
-      console.error("Error creating drive or play:", error);
-    }
+  const handleSetPossession = async (teamId: string) => {
+    await setPossession(matchData?.matchId || "", teamId);
+  };
+
+  const handleAddPlay = async () => {
+    if (isCooldown) return;
+    setIsCooldown(true);
+    await createPlay(matchData?.matchId || "");
+    setTimeout(() => setIsCooldown(false), 3000);
+  };
+
+  const handleSetDown = async (downNumber: number) => {
+    await setDown(matchData?.matchId || "", downNumber);
   };
 
   return (
     <div>
-      <div className="flex flex-row gap-6 items-center">
+      <div className="flex flex-col gap-2 items-center">
         <div className="flex flex-row gap-4 items-center">
-          <div className="flex flex-row gap-2 items-center">
+          <div className="flex flex-col gap-2 items-center">
             <Image
-              className="w-12 h-12"
+              className="w-16 h-16"
               src={matchData?.homeTeamLogo || ""}
               alt={matchData?.homeTeamName || ""}
-              width={48}
-              height={48}
+              width={64}
+              height={64}
             />
-            <h1 className="text-4xl font-bold">{matchData?.homeTeamName}</h1>
+            <div className="flex flex-row gap-2 items-center">
+              <h1 className="text-2xl font-bold">{matchData?.homeTeamName}</h1>
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  matchData?.possessionId === matchData?.homeTeamId
+                    ? "bg-cpb-lightgreen dramatic-pulse"
+                    : "bg-gray-400"
+                }`}
+              ></div>
+            </div>
+            {matchData?.possessionId === matchData?.homeTeamId ? (
+              <div className="p-2 rounded-md bg-cpb-darkgreen text-white opacity-40 pointer-events-none">
+                Has Possession
+              </div>
+            ) : (
+              <button
+                onClick={() => handleSetPossession(matchData?.homeTeamId || "")}
+                className="p-2 rounded-md bg-cpb-darkgreen text-white"
+              >
+                Take Possession
+              </button>
+            )}
           </div>
           <h1 className="text-2xl font-regular">VS</h1>
-          <div className="flex flex-row gap-2 items-center">
+          <div className="flex flex-col gap-2 items-center">
             <Image
-              className="w-12 h-12"
+              className="w-16 h-16"
               src={matchData?.awayTeamLogo || ""}
               alt={matchData?.awayTeamName || ""}
-              width={48}
-              height={48}
+              width={64}
+              height={64}
             />
-            <h1 className="text-4xl font-bold">{matchData?.awayTeamName}</h1>
+            <div className="flex flex-row gap-2 items-center">
+              <h1 className="text-2xl font-bold">{matchData?.awayTeamName}</h1>
+              <div
+                className={`w-3 h-3 rounded-full ${
+                  matchData?.possessionId === matchData?.awayTeamId
+                    ? "bg-cpb-lightgreen dramatic-pulse"
+                    : "bg-gray-400"
+                }`}
+              ></div>
+            </div>
+            {matchData?.possessionId === matchData?.awayTeamId ? (
+              <div className="p-2 rounded-md bg-cpb-darkgreen text-white opacity-40 pointer-events-none">
+                Has Possession
+              </div>
+            ) : (
+              <button
+                onClick={() => handleSetPossession(matchData?.awayTeamId || "")}
+                className="p-2 rounded-md bg-cpb-darkgreen text-white"
+              >
+                Take Possession
+              </button>
+            )}
           </div>
         </div>
-        <button
-          className="p-3 rounded-xl font-bold uppercase text-md shadow-md bg-cpb-lightred text-cpb-baseblack"
-          onClick={handleGameOverClick}
-        >
-          Game Over
-        </button>
-      </div>
-      {driveId === null ? (
-        <div className="my-6">
-          <h2 className="text-xl font-regular mb-2">Log a new drive</h2>
-          <form
-            onSubmit={handleSubmit(handleNewDriveClick)}
-            className="flex flex-row gap-4 items-start"
-          >
-            <Controller
-              name="selectedTeamId"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <select
-                  {...field}
-                  className="font-medium appearance-none border border-[#1F1F1F] rounded-lg bg-transparent px-4 py-2 cursor-pointer text-center"
-                  onChange={(e) => {
-                    setValue("selectedTeamId", e.target.value);
-                    field.onChange(e);
-                  }}
-                >
-                  <option value="" disabled>
-                    Select a team
-                  </option>
-                  <option value={matchData?.homeTeamId}>
-                    {matchData?.homeTeamName}
-                  </option>
-                  <option value={matchData?.awayTeamId}>
-                    {matchData?.awayTeamName}
-                  </option>
-                </select>
-              )}
-            />
+        <div className="flex gap-2 mt-4">
+          {[1, 2, 3, 4].map((down) => (
             <button
-              type="submit"
-              className="w-auto text-sm rounded-lg bg-cpb-baseblack text-cpb-basewhite uppercase py-3 px-2"
+              key={down}
+              className={`p-2 ${
+                matchData?.currentDown !== down ? "opacity-40" : ""
+              }`}
+              onClick={() => handleSetDown(down)}
             >
-              Start Drive
+              <Image
+                src={`/downmarker-${down}.svg`}
+                width={32}
+                height={17}
+                alt={`down-marker-${down}`}
+                className="relative"
+              />
             </button>
-          </form>
+          ))}
         </div>
-      ) : (
-        <div className="mb-20"></div>
-      )}
-      <div className="flex flex-col gap-16">
-        {gameDrives.some((drive) => drive.is_active) && (
-          <>
-            <h2 className="text-2xl font-bold mb-4">Current Drive</h2>
-            {gameDrives.map(
-              (drive, index) =>
-                drive.is_active && (
-                  <div
-                    key={drive.drive_id}
-                    className="p-4 bg-white rounded-lg shadow-md border border-gray-300"
-                  >
-                    <DriveBlock
-                      order={gameDrives.length - index}
-                      teamName={getTeamName(drive)}
-                      active={drive.is_active}
-                      drive_id={drive.drive_id}
-                    />
-                  </div>
-                )
-            )}
-          </>
-        )}
-
-        {gameDrives.some((drive) => !drive.is_active) && (
-          <>
-            <h2 className="text-2xl font-bold mt-8 mb-4">Past Drives</h2>
-            {gameDrives
-              .filter((drive) => !drive.is_active) 
-              .reverse()
-              .map((drive, index) => (
-                <div
-                  key={drive.drive_id}
-                  className="p-4 bg-white rounded-lg shadow-md border border-gray-300"
-                >
-                  <DriveBlock
-                    order={gameDrives.length - index}
-                    teamName={getTeamName(drive)}
-                    active={drive.is_active}
-                    drive_id={drive.drive_id}
-                  />
-                </div>
-              ))}
-          </>
-        )}
+        <div className="flex flex-row gap-4 mt-4">
+          <button
+            className={`p-3 rounded-xl font-bold uppercase text-md shadow-md bg-cpb-lightgreen text-cpb-baseblack ${
+              play_state === "play_open" ? "opacity-40 pointer-events-none" : ""
+            }`}
+            onClick={handleAddPlay}
+            disabled={play_state === "play_open"}
+          >
+            Add Play
+          </button>
+          <button
+            className="p-3 rounded-xl font-bold uppercase text-md shadow-md bg-cpb-lightred text-cpb-baseblack"
+            onClick={handleGameOverClick}
+          >
+            Game Over
+          </button>
+        </div>
+        <div className="flex flex-col gap-2 max-w-[1100px] p-8 bg-cpb-basewhite shadow-md w-full border border-cpb-baseblack rounded-lg mt-8">
+          {plays.map((play) => (
+            <Play
+              key={play.play_id}
+              play_id={play.play_id}
+              play_state={play.play_state}
+              created_at={play.created_at}
+              play_number={play.play_number}
+            />
+          ))}
+        </div>
       </div>
 
       {showPopup && (
@@ -222,6 +226,23 @@ const Game = () => {
           </div>
         </div>
       )}
+      <style jsx>{`
+        @keyframes dramaticPulse {
+          0%,
+          100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(0, 255, 0, 0.7);
+          }
+          50% {
+            transform: scale(1.2);
+            box-shadow: 0 0 10px 10px rgba(0, 255, 0, 0);
+          }
+        }
+
+        .dramatic-pulse {
+          animation: dramaticPulse 3s infinite;
+        }
+      `}</style>
     </div>
   );
 };

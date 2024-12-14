@@ -95,6 +95,8 @@ export async function createMatch(
         away_team_name,
         away_team_logo,
         is_active: true,
+        team_possession: home_team_id,
+        current_down: 1,
         start_time: new Date().toISOString(),
       })
       .select();
@@ -103,6 +105,48 @@ export async function createMatch(
     return data;
   } catch (error) {
     console.error("Error creating match:", error);
+    throw error;
+  }
+}
+
+/**
+ * Updates the team_possession and resets the down to first down for a given match
+ * @param {string} match_id
+ * @param {string} team_id
+ * @returns {Promise<{ data: any; error: any }>}
+ */
+export async function setPossession(match_id: string, team_id: string) {
+  const supabase = createClient();  
+
+  try {
+    const { data, error } = await supabase
+      .from("matches")
+      .update({ team_possession: team_id, current_down: 1 })
+      .eq("match_id", match_id);
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error taking possession:", error);
+    throw error;
+  }
+}
+
+
+/**
+ * Sets the current down for a given match
+ * @param {string} match_id
+ * @param {number} down_number
+ * @returns {Promise<{ data: any; error: any }>}
+ */
+export async function setDown(match_id: string, down_number: number) {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase.from("matches").update({ current_down: down_number }).eq("match_id", match_id);
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error taking possession:", error);
     throw error;
   }
 }
@@ -125,109 +169,21 @@ export async function endAllMatches() {
     throw error;
   }
 }
-
-/**
- * Creates a new drive in the "drives" table
- * @param {string} team_id
- * @param {string} match_id
- * @returns {Promise<{ data: any; error: any }>}
- */
-export async function createDrive(match_id: string, team_id: string) {
-  const supabase = createClient();
-
-  try {
-    const { data, error } = await supabase
-      .from("drives")
-      .insert({
-        match_id,
-        team_id,
-        start_time: new Date().toISOString(),
-        is_active: true,
-      })
-      .select();
-
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("Error creating drive:", error);
-    throw error;
-  }
-}
-
-/**
- * Ends all drives in the "drives" table
- * @returns {Promise<{ data: any; error: any }>}
- */
-export async function endAllDrives() {
-  const supabase = createClient();
-
-  try {
-    const { error } = await supabase
-      .from("drives")
-      .update({ is_active: false })
-      .eq("is_active", true);
-    if (error) throw error;
-  } catch (error) {
-    console.error("Error ending drives:", error);
-    throw error;
-  }
-}
-
-/**
- * Gets all drives for a given match
- * @param {string} match_id
- * @returns {Promise<{ data: any; error: any }>}
- */
-export async function getMatchDrives(match_id: string) {
-  const supabase = createClient();
-
-  try {
-    const { data, error } = await supabase
-      .from("drives")
-      .select("*")
-      .eq("match_id", match_id);
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("Error fetching match drives:", error);
-    throw error;
-  }
-}
-
-/**
- * Gets all plays for a given drive
- * @param {string} drive_id
- * @returns {Promise<{ data: any; error: any }>}
- */
-export async function getDrivePlays(drive_id: string) {
-  const supabase = createClient();
-
-  try {
-    const { data, error } = await supabase
-      .from("plays")
-      .select("*")
-      .eq("drive_id", drive_id);
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error("Error fetching drive plays:", error);
-    throw error;
-  }
-}
-
+ 
 /**
  * Creates a new play in the "plays" table
- * @param {string} drive_id
+ * 
+ * @param {string} match_id
  * @returns {Promise<{ data: any; error: any }>}
  */
-export async function createPlay(drive_id: string) {
+export async function createPlay(match_id: string) {
   const supabase = createClient();
 
   try {
     const { data, error } = await supabase
       .from("plays")
       .insert({
-        drive_id,
+        match_id,
       })
       .select();
 
@@ -235,6 +191,23 @@ export async function createPlay(drive_id: string) {
     return data;
   } catch (error) {
     console.error("Error creating play:", error);
+    throw error;
+  }
+}
+
+/**
+ * Gets all plays for a given match
+ * @param {string} match_id
+ * @returns {Promise<{ data: any; error: any }>}
+ */
+export async function getMatchPlays(match_id: string) {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase.from("plays").select("*").eq("match_id", match_id).order("created_at", { ascending: false });
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error fetching match plays:", error);
     throw error;
   }
 }
@@ -264,7 +237,7 @@ export async function startPlay(play_id: string) {
 
 export async function updateScoresforPlay(
   play_id: string,
-  drive_id: string,
+  match_id: string,
   actual_type: string,
   actual_distance: string,
   is_ignored: boolean
@@ -272,10 +245,20 @@ export async function updateScoresforPlay(
   const supabase = createClient();
   const maxRetries = 3;
 
+  const CORRECT_MULTIPLIERS = {
+    "run-short": 2,
+    "pass-short": 3,
+    "run-med": 10,
+    "pass-med": 7,
+    "run-long": 50,
+    "pass-long": 20,
+  };
+
   const { data: playerPicks, error: playerPicksError } = await supabase
     .from("player_picks")
     .select("*")
-    .eq("play_id", play_id);
+    .eq("play_id", play_id)
+    .eq("match_id", match_id);
 
   if (playerPicksError) {
     console.error("Error fetching player picks:", playerPicksError);
@@ -283,114 +266,122 @@ export async function updateScoresforPlay(
   }
 
   for (const playerPick of playerPicks) {
-    if (is_ignored) {
-      const { error: ignorePickError } = await supabase
-        .from("player_picks")
-        .update({ is_ignored: true })
-        .eq("pick_id", playerPick.pick_id);
+    console.log("playerPick", playerPick);
+    const playerId = playerPick.player_id;
+    const playerBalance = (await getCoinBalance(playerId)).coin_balance;
 
-      if (ignorePickError) {
-        console.error("Error marking pick as ignored:", ignorePickError);
-        throw ignorePickError;
+    console.log("playerBalance", playerBalance);
+
+    // REFUND THE PLAYERS IF THE PICKS IS IGNORED
+    if (is_ignored) {
+      try {
+        const { error: ignoreAndUpdateError } = await supabase
+          .from("player_picks")
+          .update({
+            is_ignored: true,
+            points_allocated: playerPick.points_wagered
+          })
+          .eq("pick_id", playerPick.pick_id);
+
+        if (ignoreAndUpdateError) {
+          throw new Error(`Error updating pick as ignored and setting points_allocated: ${ignoreAndUpdateError.message}`);
+        }
+
+        const newBalance = playerBalance + playerPick.points_wagered;
+        await setCoinBalance(playerPick.player_id, newBalance);
+
+      } catch (error) {
+        console.error(error);
+        throw error;
       }
 
       continue;
     }
 
-    let retryCount = 0;
-    let success = false;
+    // IF THEY ARE PARIALY CORRECT, REUND THE PLAYERS THEIR WAGER 
+    if (playerPick.pick_type === actual_type && playerPick.pick_distance !== actual_distance) {
+      try {
+        const newBalance = playerBalance + playerPick.points_wagered;
+        await setCoinBalance(playerPick.player_id, newBalance);
 
-    while (retryCount < maxRetries && !success) {
-      const isCorrect = playerPick.pick_type === actual_type;
+        // Update the player_pick table with the points_allocated
+        const { error: updatePickError } = await supabase
+          .from("player_picks")
+          .update({
+            is_ignored: false,
+            points_allocated: playerPick.points_wagered
+          })
+          .eq("pick_id", playerPick.pick_id);
 
-      const { data: currentScoreData, error: currentScoreError } = await supabase
-        .from("scores")
-        .select("*")
-        .eq("player_id", playerPick.player_id)
-        .eq("drive_id", drive_id)
-        .single();
-
-      if (currentScoreError && currentScoreError.code !== 'PGRST116') {
-        console.error("Error fetching current score:", currentScoreError);
-        throw currentScoreError;
-      }
-
-      let points = currentScoreData?.points || 0;
-      let correct_picks = currentScoreData?.correct_picks || 0;
-      let total_picks = currentScoreData?.total_picks || 0;
-      const lastUpdated = currentScoreData?.last_updated;
-
-      let pointsAllocated = 0;
-
-      if (isCorrect) {
-        correct_picks += 1;
-        switch (actual_distance) {
-          case "short":
-            pointsAllocated = actual_type === "pass" ? 150 : 150;
-            break;
-          case "med":
-            pointsAllocated = actual_type === "pass" ? 300 : 500;
-            break;
-          case "long":
-            pointsAllocated = actual_type === "pass" ? 1000 : 2000;
-            break;
-          default:
-            pointsAllocated = 100; // Default to base points if distance is unknown
+        if (updatePickError) {
+          throw new Error(`Error updating points_allocated for correct pick: ${updatePickError.message}`);
         }
-        points += pointsAllocated;
-      } else {
-        pointsAllocated = -50;
-        points += pointsAllocated;
+      } catch (error) {
+        console.error(error);
+        throw error;
       }
-      total_picks += 1;
+    }
 
+    // IF THEY ARE CORRECT, ALLOCATE POINTS 
+    if (playerPick.pick_type === actual_type && playerPick.pick_distance === actual_distance) {
+      try {
+
+        const outcomeKey = `${actual_type}-${actual_distance}`;
+        const multiplier = CORRECT_MULTIPLIERS[outcomeKey as keyof typeof CORRECT_MULTIPLIERS] || 0;
+
+        const points_allocated = playerPick.points_wagered * multiplier;
+        const newBalance = playerBalance + points_allocated;
+        await setCoinBalance(playerPick.player_id, newBalance);
+
+        // Update the player_pick table with the points_allocated
+        const { error: updatePickError } = await supabase
+          .from("player_picks")
+          .update({
+            is_ignored: false,
+            points_allocated: points_allocated
+          })
+          .eq("pick_id", playerPick.pick_id);
+
+        if (updatePickError) {
+          throw new Error(`Error updating points_allocated for correct pick: ${updatePickError.message}`);
+        }
+      } catch (error) {
+        console.error(error);
+        throw error;
+      }
+    }
+
+    // IF IT GETS HERE THE PLAYER HAS LOST
+    try {
       const { error: updatePickError } = await supabase
         .from("player_picks")
-        .update({ is_correct: isCorrect, points_allocated: pointsAllocated })
+        .update({
+          is_correct: false,
+          points_allocated: 0
+        })
         .eq("pick_id", playerPick.pick_id);
 
       if (updatePickError) {
-        console.error("Error updating player pick:", updatePickError);
-        throw updatePickError;
+        throw new Error(`Error updating points_allocated for lost pick: ${updatePickError.message}`);
       }
-
-      const { error: upsertError } = await supabase.from("scores").upsert(
-        {
-          player_id: playerPick.player_id,
-          drive_id: drive_id,
-          points,
-          correct_picks,
-          total_picks,
-          last_updated: new Date().toISOString(),
-        },
-        { onConflict: "player_id, drive_id" }
-      ).eq("last_updated", lastUpdated);
-
-      if (!upsertError) {
-        success = true;
-      } else {
-        console.warn(`Conflict detected, retrying... (${retryCount + 1}/${maxRetries})`);
-        retryCount++;
-      }
-    }
-
-    if (!success) {
-      console.error("Failed to update score after multiple attempts.");
-      throw new Error("Failed to update score after multiple attempts.");
+    } catch (error) {
+      console.error(error);
+      throw error;
     }
   }
 }
+
 /**
  * Logs a play in the "plays" table
  * @param {string} play_id
- * @param {string} drive_id
+ * @param {string} match_id
  * @param {string} play_type
  * @param {string} play_distance
  * @returns {Promise<{ data: any; error: any }>}
  */
 export async function logPlayStateUpdateScores(
   play_id: string,
-  drive_id: string,
+  match_id: string,
   play_type: string,
   play_distance: string,
 ) {
@@ -398,10 +389,10 @@ export async function logPlayStateUpdateScores(
 
   try {
 
-    const is_ignored = play_type !== "run" && play_type !== "pass";
+    const is_ignored = play_type === "punt" || play_type === "spike" || play_type === "knee" || play_type === "field goal" || play_type === "penalty" || play_type === "no-play";
 
     const updateData = {
-      drive_id,
+      match_id,
       play_state: "play_closed",
       play_type,
       play_distance:
@@ -415,7 +406,7 @@ export async function logPlayStateUpdateScores(
       .eq("play_id", play_id);
     if (error) throw error;
 
-    updateScoresforPlay(play_id, drive_id, play_type, play_distance, is_ignored);
+    updateScoresforPlay(play_id, match_id, play_type, play_distance, is_ignored);
 
     return data;
   } catch (error) {
@@ -425,50 +416,61 @@ export async function logPlayStateUpdateScores(
 }
 
 /**
- * Gets the score for a given drive and user
- * @param {string} drive_id
+ * Gets the coin balance for a given player
  * @param {string} player_id
- * @returns {Promise<{ data: any; error: any }>}
+ * @returns {Promise<{ coin_balance: number; error: any }>}
  */
-export async function getUserScore(
-  drive_id: string,
-  player_id: string
-) {
+export async function getCoinBalance(player_id: string) {
   const supabase = createClient();
 
   try {
     const { data, error } = await supabase
-      .from("scores")
-      .select("*")
-      .eq("drive_id", drive_id)
+      .from("players")
+      .select("coin_balance")
       .eq("player_id", player_id)
       .single();
 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error("Error fetching user score:", error);
+    console.error("Error fetching coin balance:", error);
+    throw error;
+  }
+}
+
+/**
+ * Sets the coin balance for a given player
+ * @param {string} player_id
+ * @param {number} new_balance
+ * @returns {Promise<{ data: any; error: any }>}
+ */
+export async function setCoinBalance(player_id: string, new_balance: number) {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase.from("players").update({ coin_balance: new_balance }).eq("player_id", player_id);
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error setting coin balance:", error);
     throw error;
   }
 }
 
 
 /**
- * Gets the leaderboard for a given drive
- * @param {string} drive_id
+ * Gets the leaderboard from the players table
  * @returns {Promise<{ data: any; error: any }>}
  */
-export async function getLeaderboard(drive_id: string) {
+export async function getLeaderboard() {
   const supabase = createClient();
-
   try {
     const { data, error } = await supabase
-      .from("leaderboard")
-      .select("username, points, is_anon")
-      .eq("drive_id", drive_id)
+      .from("players")
+      .select("username, coin_balance")
       .eq("is_anon", false)
-      .order("points", { ascending: false })
-      .limit(10);
+      .not("auth_id", "is", null)
+      .order("coin_balance", { ascending: false })
+      .limit(50);
 
     if (error) throw error;
     return data;
@@ -528,40 +530,68 @@ export async function getPastPicks(player_id: string, drive_id: string) {
 
 
 /**
- *
- * @param player_id
- * @param play_id
- * @param play_type
- * @param play_distance
- * @returns
+ * Submits a play in the "player_picks" table
+ * @param {string} match_id
+ * @param {string} player_id
+ * @param {string} play_id
+ * @param {string} play_type
+ * @param {string} play_distance
+ * @param {number} play_bet
+ * @returns {Promise<{ data: any; error: any }>}
  */
 export async function playerSubmitPlay(
   match_id: string,
-  drive_id: string,
   player_id: string,
   play_id: string,
   play_type: string,
   play_distance: string,
+  play_bet: number
 ) {
   const supabase = createClient();
 
+  const betValues = {
+    1: 10,
+    2: 25,
+    3: 50,
+    4: 100,
+    5: 250,
+    6: 500,
+  };
+
   try {
-    const { data, error } = await supabase.from("player_picks").upsert(
+    const { data: pickData, error: pickError } = await supabase.from("player_picks").upsert(
       {
         match_id: match_id,
-        drive_id: drive_id,
         player_id: player_id,
         play_id: play_id,
         pick_type: play_type,
         pick_distance: play_distance,
-        is_correct: false,
         is_ignored: false,
+        points_wagered: betValues[play_bet as keyof typeof betValues],
       },
       { onConflict: "play_id,player_id" }
     );
 
-    if (error) throw error;
-    return data;
+    if (pickError) throw pickError;
+
+    const { data: playerData, error: playerError } = await supabase
+      .from("players")
+      .select("coin_balance")
+      .eq("player_id", player_id)
+      .single();
+
+    if (playerError) throw playerError;
+    const currentBalance = Number(playerData.coin_balance);
+    const newBalance = currentBalance - betValues[play_bet as keyof typeof betValues];
+
+    const { error: balanceError } = await supabase
+      .from("players")
+      .update({ coin_balance: newBalance })
+      .eq("player_id", player_id);
+
+    if (balanceError) throw balanceError;
+
+    return pickData;
   } catch (error) {
     console.error("Error submitting play:", error);
     throw error;
@@ -571,14 +601,12 @@ export async function playerSubmitPlay(
 /**
  * Undoes a play in the "player_picks" table
  * @param {string} match_id
- * @param {string} drive_id
  * @param {string} player_id
  * @param {string} play_id
  * @returns {Promise<{ data: any; error: any }>}
  */
 export async function undoPlay(  
   match_id: string,
-  drive_id: string,
   player_id: string,
   play_id: string
 ) {
@@ -586,7 +614,6 @@ export async function undoPlay(
   try {
     const { data, error } = await supabase.from("player_picks").delete()
       .eq("match_id", match_id)
-      .eq("drive_id", drive_id)
       .eq("player_id", player_id)
       .eq("play_id", play_id);
 

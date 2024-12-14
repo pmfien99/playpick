@@ -2,11 +2,14 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { createClient } from "@/app/_lib/supabase/client";
 import { createNewAnonUser } from "@/app/_lib/supabase/database";
 
+// TODO: Add proper coins login to user context 
+
 interface User {
   player_id: string;
   username: string | null;
   is_anon: boolean;
   email: string | null;
+  coins: number;
 }
 
 interface UserContextType {
@@ -19,6 +22,7 @@ const defaultAnonUser: User = {
   username: null,
   is_anon: true,
   email: null,
+  coins: 0,
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -47,6 +51,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             username: data.user.user_metadata.username || null,
             is_anon: false,
             email: data.user.email || null,
+            coins: 0,
           });
         }
       } catch (err) {
@@ -63,6 +68,7 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           username: session.user.user_metadata.username || null,
           is_anon: false,
           email: session.user.email || null,
+          coins: 0,
         });
       } else {
         setUser(defaultAnonUser);
@@ -73,6 +79,10 @@ export const UserProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       authListener?.subscription.unsubscribe();
     };
   }, [supabase]);
+
+  useEffect(() => {
+    console.log("user", user);
+  }, [user]);
 
   return (
     <UserContext.Provider value={{ user, setUser }}>

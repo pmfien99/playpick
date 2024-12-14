@@ -8,11 +8,13 @@ import WinView from "./views/winView";
 import ProfileView from "./views/profileView";
 import Link from "next/link";
 import SvgIcon from "@/app/_components/icons/svgIcon";
+import useSound from 'use-sound';
 
 import { useState } from "react";
 
 export default function Page() {
   const [activeView, setActiveView] = useState("play");
+  const [playToggleSound] = useSound('/sfx/tab-switch.wav');
 
   const getBackgroundStyle = () => {
     switch (activeView) {
@@ -46,7 +48,10 @@ export default function Page() {
         <Link
           className={`flex flex-col items-center justify-center align-center ${activeView === "play" ? "text-[#00D4A1]" : "text-[#8B8B8C]"}`}
           href="/"
-          onClick={() => setActiveView("play")}
+          onClick={() => {
+            playToggleSound();
+            setActiveView("play");
+          }}
         >
           <SvgIcon className="w-8 h-8" name="play" />
           <p className="text-current text-base font-flick">PLAY</p>
@@ -54,7 +59,10 @@ export default function Page() {
         <Link
           className={`flex flex-col items-center justify-center align-center ${activeView === "standings" ? "text-[#5392D3]" : "text-[#8B8B8C]"}`}
           href="/"
-          onClick={() => setActiveView("standings")}
+          onClick={() => {
+            playToggleSound();
+            setActiveView("standings");
+          }}
         >
           <SvgIcon className="w-8 h-8" name="standings" />
           <p className="text-current text-base font-flick">STANDINGS</p>
@@ -62,7 +70,10 @@ export default function Page() {
         <Link
           className={`flex flex-col items-center justify-center align-center ${activeView === "earn" ? "text-[#FED45F]" : "text-[#8B8B8C]"}`}
           href="/"
-          onClick={() => setActiveView("earn")}
+          onClick={() => {
+            playToggleSound();
+            setActiveView("earn");
+          }}
         >
           <SvgIcon className="w-8 h-8" name="earn" />
           <p className="text-current text-base font-flick">EARN</p>
@@ -70,7 +81,10 @@ export default function Page() {
         <Link
           className={`flex flex-col items-center justify-center align-center ${activeView === "win" ? "text-[#8971D7]" : "text-[#8B8B8C]"}`}
           href="/"
-          onClick={() => setActiveView("win")}
+          onClick={() => {
+            playToggleSound();
+            setActiveView("win");
+          }}
         >
           <SvgIcon className="w-8 h-8" name="win" />
           <p className="text-current text-base font-flick">WIN</p>
@@ -78,7 +92,10 @@ export default function Page() {
         <Link
           className={`flex flex-col items-center justify-center align-center ${activeView === "profile" ? "text-[#F9F9FB]" : "text-[#8B8B8C]"}`}
           href="/"
-          onClick={() => setActiveView("profile")}
+          onClick={() => {
+            playToggleSound();
+            setActiveView("profile");
+          }}
         >
           <SvgIcon className="w-8 h-8" name="profile" />
           <p className="text-current text-base font-flick">PROFILE</p>

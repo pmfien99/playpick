@@ -3,12 +3,9 @@
 import Play from "./play";
 import PastPlay from "./pastplay";
 import { useState, useEffect } from "react";
-import {
-  getDrivePlays,
-  endAllDrives, 
-} from "@/app/_lib/supabase/database";
-import { useGame } from "@/app/_context/gameContext";
 import { createClient } from "@/app/_lib/supabase/client";
+
+//TODO: probably good to deprecate this component
 
 interface DriveProps {
   active: boolean;
@@ -30,22 +27,11 @@ interface PlayData {
 const supabaseClient = createClient();
 
 const DriveBlock: React.FC<DriveProps> = ({ active, drive_id, teamName, order }) => {
-  const { playId, isMatchActive, driveId } = useGame();
   const [drivePlays, setDrivePlays] = useState<PlayData[]>([]);
-
-  const handleEndDriveClick = async () => {
-    await endAllDrives();
-  };
 
   useEffect(() => {
     const fetchPlays = async () => {
-      const plays = await getDrivePlays(drive_id);
-      const sortedPlays = plays.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-      console.log("sortedPlays", sortedPlays);
-      setDrivePlays(sortedPlays);
+      console.log("getting plays")
     };
     fetchPlays();
 
@@ -69,7 +55,7 @@ const DriveBlock: React.FC<DriveProps> = ({ active, drive_id, teamName, order })
     return () => {
       supabaseClient.removeChannel(subscription);
     };
-  }, [drive_id, playId]);
+  }, [drive_id]);
 
   return (
     <div>
@@ -82,18 +68,6 @@ const DriveBlock: React.FC<DriveProps> = ({ active, drive_id, teamName, order })
           )}
           {teamName}
         </h2>
-        {isMatchActive &&
-          (playId !== null &&
-          drive_id === driveId && (
-            <div className="flex gap-4">
-              <button
-                className="p-3 rounded-xl font-bold uppercase text-md shadow-md bg-cpb-lightred text-cpb-baseblack"
-                onClick={handleEndDriveClick}
-              >
-                End Drive
-              </button>
-            </div>
-          ))}
       </div>
       <div className="grid grid-cols-1 gap-x-4 w-full">
         {drivePlays.map((play, index) => (

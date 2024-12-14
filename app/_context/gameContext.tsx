@@ -9,14 +9,15 @@ interface MatchData {
   awayTeamName: string;
   awayTeamLogo: string;
   matchId: string;
+  currentDown: number;
+  possessionId: string;
 }
 
 interface GameState {
   isMatchActive: boolean;
   matchData: MatchData | null;
-  driveId: string | null;
-  driveTeam: string | null;
-  playId: string | null;
+  play_id: string | null;
+  play_state: string | null;
 }
 
 interface GameContextType extends GameState {
@@ -30,10 +31,10 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [gameState, setGameState] = useState<GameState>({
     isMatchActive: false,
     matchData: null,
-    driveId: null,
-    driveTeam: null,
-    playId: null,
+    play_id: null,
+    play_state: null,
   });
+
 
   const updateGameContext = async () => {
     try {
@@ -48,9 +49,8 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           ...prevState,
           isMatchActive: false,
           matchData: null,
-          driveId: null,
-          driveTeam: null,
-          playId: null,
+          play_id: null,
+          play_state: null,
         }));
         return;
       }
@@ -62,70 +62,68 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         awayTeamId: matchData.away_team_id,
         awayTeamName: matchData.away_team_name,
         awayTeamLogo: matchData.away_team_logo,
-        matchId: matchData.match_id
+        matchId: matchData.match_id,
+        possessionId: matchData.team_possession,
+        currentDown: matchData.current_down,
       };
 
-      const { data: driveData, error: driveError } = await supabaseClient
-        .from('drives')
-        .select('*')
-        .eq('match_id', newMatchData.matchId)
-        .eq('is_active', true)
-        .maybeSingle();
+      try {
+        const { data: playData, error: playError } = await supabaseClient
+          .from('plays')
+          .select('*')
+          .eq('match_id', matchData.match_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
 
-      const driveId = driveData?.drive_id || null;
-
-      const { data: playData, error: playError } = await supabaseClient
-        .from('plays')
-        .select('*')
-        .eq('drive_id', driveId)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      setGameState(prevState => ({
-        ...prevState,
-        isMatchActive: true,
-        matchData: newMatchData,
-        driveId: driveId,
-        driveTeam: driveData?.team_id || null,
-        playId: playData?.play_id || null,
-      }));
+        setGameState(prevState => ({
+          ...prevState,
+          isMatchActive: true,
+          matchData: newMatchData,
+          play_id: playData?.play_id,
+          play_state: playData?.play_state,
+        }));
+      } catch (error) {
+        console.error("Error fetching current play:", error);
+      }
 
     } catch (error) {
       console.error("Error in updateGameContext:", error);
     }
+
+
   };
+
 
   useEffect(() => {
     updateGameContext();
 
     const matchStatusSubscription = supabaseClient.channel('match_state')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'matches' },
-        () => {
-          updateGameContext();
-        }).subscribe();
-
-    const driveStatusSubscription = supabaseClient.channel('drive_state')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'drives' },
-        () => {
-          updateGameContext();
-        }).subscribe();
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'matches' },
+      () => {
+        console.log("Detected change in matches table");
+        updateGameContext();
+      }).subscribe();
 
     const playStatusSubscription = supabaseClient.channel('play_state')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'plays' },
-        () => {
-          updateGameContext();
-        }).subscribe();
+    .on('postgres_changes', 
+      { event: '*', schema: 'public', table: 'plays' },
+      () => {
+        console.log("Detected change in plays table");
+        updateGameContext();
+      }).subscribe();
+
 
     return () => {
       supabaseClient.removeChannel(matchStatusSubscription);
-      supabaseClient.removeChannel(driveStatusSubscription);
       supabaseClient.removeChannel(playStatusSubscription);
     };
   }, []);
+
+  useEffect(() => {
+    console.log("game context", gameState);
+  }, [gameState]);
 
   return (
     <GameContext.Provider value={{ ...gameState, setGameState }}>

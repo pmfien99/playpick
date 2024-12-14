@@ -6,6 +6,7 @@ import { useUser } from "../_context/usercontext";
 import { signOut } from "../_lib/supabase/auth";
 import { redirect } from "next/navigation";
 import { useRouter } from "next/navigation";
+import SvgIcon from "./icons/svgIcon";
 
 type NavigationProps = {
   theme: "light" | "dark";
@@ -16,15 +17,20 @@ const Navigation = ({ theme }: NavigationProps) => {
   const isDarkMode = theme === "dark";
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isSideNavOpen, setIsSideNavOpen] = useState(false);
   const router = useRouter();
+
+  const toggleSideNav = () => {
+    setIsSideNavOpen(!isSideNavOpen);
+  };
 
   const togglePopup = () => {
     setIsPopupOpen(!isPopupOpen);
   };
 
-  const toggleFeedback = () => {
-    setIsFeedbackOpen(!isFeedbackOpen);
-  };
+  // const toggleFeedback = () => {
+  //   setIsFeedbackOpen(!isFeedbackOpen);
+  // };
 
   const handleSignOut = async () => {
     const response = await signOut();
@@ -39,11 +45,39 @@ const Navigation = ({ theme }: NavigationProps) => {
   return (
     <>
       <div
-        className={`px-10 py-5 relative flex flex-row justify-between items-center ${
+        className={`px-5 py-5 relative flex flex-row justify-between items-center ${
           isDarkMode ? "text-cpb-basewhite" : "text-cpb-baseblack"
         }`}
       >
         <div className="flex flex-row gap-2 justify-center items-center">
+          <button onClick={() => setIsSideNavOpen(true)}>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M10.5454 2.15909H1.45456C1.20283 2.15909 0.970288 2.02478 0.844448 1.80687L10.5454 2.15909ZM10.5454 2.15909C10.7972 2.15909 11.0297 2.02479 11.1556 1.80687L10.5454 2.15909ZM1.45456 0.75C1.20282 0.75 0.970287 0.884299 0.844448 1.10222L11.1556 1.80681C11.2815 1.58885 11.2815 1.32024 11.1556 1.10227C11.0297 0.884327 10.7972 0.75 10.5454 0.75H1.45456ZM0.844415 1.10228C0.718527 1.32025 0.718528 1.58885 0.844419 1.80682L0.844415 1.10228Z"
+                fill="#F9F9FB"
+                stroke="#F9F9FB"
+                stroke-width="0.5"
+              />
+              <path
+                d="M10.5454 6.7045H1.45456C1.20283 6.7045 0.970288 6.57019 0.844448 6.35228L10.5454 6.7045ZM10.5454 6.7045C10.7972 6.7045 11.0297 6.5702 11.1556 6.35228L10.5454 6.7045ZM1.45456 5.29541C1.20282 5.29541 0.970287 5.42971 0.844448 5.64763L11.1556 6.35222C11.2815 6.13426 11.2815 5.86565 11.1556 5.64768C11.0297 5.42974 10.7972 5.29541 10.5454 5.29541H1.45456ZM0.844415 5.64769C0.718527 5.86566 0.718528 6.13426 0.844419 6.35223L0.844415 5.64769Z"
+                fill="#F9F9FB"
+                stroke="#F9F9FB"
+                stroke-width="0.5"
+              />
+              <path
+                d="M10.5454 11.2499H1.45456C1.20283 11.2499 0.970288 11.1156 0.844448 10.8977L10.5454 11.2499ZM10.5454 11.2499C10.7972 11.2499 11.0297 11.1156 11.1556 10.8977L10.5454 11.2499ZM1.45456 9.84082C1.20282 9.84082 0.970287 9.97512 0.844448 10.193L11.1556 10.8976C11.2815 10.6797 11.2815 10.4111 11.1556 10.1931C11.0297 9.97515 10.7972 9.84082 10.5454 9.84082H1.45456ZM0.844415 10.1931C0.718527 10.4111 0.718528 10.6797 0.844419 10.8976L0.844415 10.1931Z"
+                fill="#F9F9FB"
+                stroke="#F9F9FB"
+                stroke-width="0.5"
+              />
+            </svg>
+          </button>
           <Link href="/" className="h-3">
             <svg
               width="auto"
@@ -69,7 +103,7 @@ const Navigation = ({ theme }: NavigationProps) => {
               <path d="M7.5 0C3.35861 0 0 3.35861 0 7.5C0 11.6414 3.35861 15 7.5 15C11.6414 15 15 11.6414 15 7.5C15 3.35861 11.6414 0 7.5 0ZM8.55208 11.2292C8.55208 11.8105 8.08072 12.2812 7.5 12.2812C6.91862 12.2812 6.44792 11.8099 6.44792 11.2292V7.31972C6.44792 6.73835 6.91928 6.26764 7.5 6.26764C7.79036 6.26764 8.05339 6.38483 8.24544 6.57689C8.43556 6.767 8.55274 7.02936 8.55274 7.31972L8.55208 11.2292ZM7.5 4.82347C6.91862 4.82347 6.44792 4.35211 6.44792 3.77139C6.44792 3.19001 6.91928 2.71931 7.5 2.71931C8.08138 2.71931 8.55208 3.19067 8.55208 3.77139C8.55208 4.35211 8.08138 4.82347 7.5 4.82347Z" />
             </svg>
           </button>
-          <button
+          {/* <button
             onClick={toggleFeedback}
             className="h-4 w-4 aspect-square flex justify-center items-center"
           >
@@ -82,7 +116,7 @@ const Navigation = ({ theme }: NavigationProps) => {
             >
               <path d="M14 4.37863V8.54067C14 9.20023 13.4579 9.73603 12.7907 9.73603H11.7028C11.5957 9.73603 11.5081 9.82203 11.5081 9.92845V11.5686C11.5081 11.735 11.4205 11.8755 11.2709 11.9516C11.1213 12.0271 10.9541 12.0135 10.8189 11.9163L7.82949 9.77249C7.79632 9.74898 7.75688 9.73537 7.71557 9.73537H6.36727C6.31782 9.73537 6.26899 9.73227 6.22017 9.72608L6.06619 9.7069L7.78558 8.47441H9.36984C10.4227 8.47441 11.279 7.62738 11.279 6.58729V3.18317H12.7906C13.4579 3.18317 13.9999 3.71898 13.9999 4.37853L14 4.37863ZM7.60781 8.12753L3.95603 10.7459C3.77576 10.8752 3.55731 10.8919 3.35887 10.7923C3.16044 10.6927 3.04528 10.5071 3.04528 10.2868L3.04465 8.28286C3.04465 8.17582 2.95765 8.09044 2.84999 8.09044H1.5211C0.682952 8.09044 0 7.41665 0 6.58756V1.50288C0 0.673803 0.682284 0 1.5211 0H9.36975C10.2079 0 10.8909 0.67379 10.8909 1.50288V6.58756C10.8909 7.41664 10.2086 8.09044 9.36975 8.09044H7.72166C7.68035 8.09044 7.64092 8.10344 7.60774 8.12757L7.60781 8.12753ZM8.28633 4.23753C8.39399 4.23753 8.481 4.15214 8.481 4.04511C8.481 3.93807 8.39399 3.85269 8.28633 3.85269H2.60401C2.49635 3.85269 2.40934 3.93807 2.40934 4.04511C2.40934 4.15153 2.49635 4.23753 2.60401 4.23753H8.28633Z" />
             </svg>
-          </button>
+          </button> */}
         </div>
         {user.is_anon ? (
           <Link className="text-base font-black" href="/sign-in">
@@ -144,18 +178,19 @@ const Navigation = ({ theme }: NavigationProps) => {
                 </svg>
               </div>
               <div className="justify-center items-center text-center">
-              <h2 className="text-lg sm:text-2xl font-regular text-cpb-darkgreen flex flex-col gap-0 font-flick">
-              Predict The play to Win
+                <h2 className="text-lg sm:text-2xl font-regular text-cpb-darkgreen flex flex-col gap-0 font-flick">
+                  Predict The play to Win
                 </h2>
               </div>
               <div className="w-full h-[2px] bg-cpb-basegray"></div>
               <div className="flex flex-col gap-1 items-center text-center">
-              <p className="text-cpb-baseblack text-base text-center">
-              1. Earn points for predicting the play type.
-              </p>
-              <p className="text-cpb-baseblack text-base text-center">
-              2. If correct, earn extra points for predicting the play distance.
-              </p>
+                <p className="text-cpb-baseblack text-base text-center">
+                  1. Earn points for predicting the play type.
+                </p>
+                <p className="text-cpb-baseblack text-base text-center">
+                  2. If correct, earn extra points for predicting the play
+                  distance.
+                </p>
               </div>
               <svg
                 width="100%"
@@ -325,19 +360,21 @@ const Navigation = ({ theme }: NavigationProps) => {
               </svg>
               <div className="w-full h-[2px] bg-cpb-basegray"></div>
               <p className="text-cpb-baseblack text-sm">
-                Completed passes and runs are scored by total yardage, while pass attempts use air yardage.
+                Completed passes and runs are scored by total yardage, while
+                pass attempts use air yardage.
               </p>
 
               <p className="text-cpb-baseblack text-sm">
-                Picks submitted on punts, sacks, field goals, interceptions, fumbles, penalties, knees, spikes, timeouts, and no-plays are not scored.
+                Picks submitted on punts, sacks, field goals, interceptions,
+                fumbles, penalties, knees, spikes, timeouts, and no-plays are
+                not scored.
               </p>
-
             </div>
           </div>
         </div>
       )}
 
-      {isFeedbackOpen && (
+      {/* {isFeedbackOpen && (
         <div
           className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[9999]"
           onClick={toggleFeedback}
@@ -413,11 +450,128 @@ const Navigation = ({ theme }: NavigationProps) => {
             </div>
           </div>
         </div>
-      )}
-{/* 
-      <div className="absolute bottom-0 left-0 right-0 w-full h-[100vh] z-[9999] bg-[#000000B2]">
-        <p>sHello</p>
-      </div> */}
+      )} */}
+
+      {/* Background Overlay */}
+      <div
+        className={`absolute inset-0 bg-black z-[9998] transition-opacity duration-300 ${
+          isSideNavOpen ? "opacity-70" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={toggleSideNav}
+      ></div>
+      {/*SIDENAV */}
+      <div className={`absolute top-0 left-0 h-full bg-[#101010] z-[9999] transition-transform duration-300 ${
+          isSideNavOpen ? "translate-x-0" : "-translate-x-full"
+        }`}>
+        <div className="flex justify-center items-center h-full">
+          <div className="h-full bg-[#101010] mr-auto p-4 gap-5 flex flex-col text-cpb-basewhite text-regular font-semibold capitalize">
+            <button onClick={() => setIsSideNavOpen(false)} className="flex justify-center items-center w-6 h-6 mx-auto cursor-pointer">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 11 11"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M5.5 11C8.525 11 11 8.525 11 5.5C11 2.475 8.525 1.61275e-06 5.5 1.34829e-06C2.475 1.08384e-06 2.5744e-06 2.475 2.30994e-06 5.5C2.04549e-06 8.525 2.475 11 5.5 11ZM5.5 0.785716C8.09286 0.785716 10.2143 2.90714 10.2143 5.5C10.2143 8.09286 8.09286 10.2143 5.5 10.2143C2.90714 10.2143 0.785716 8.09286 0.785716 5.5C0.785717 2.90714 2.90715 0.785715 5.5 0.785716Z"
+                  fill="white"
+                />
+                <path
+                  d="M2.78901 5.65721C2.82829 5.6965 2.82829 5.73578 2.86758 5.77507L4.43901 7.3465C4.59615 7.50364 4.83186 7.50364 4.98901 7.3465C5.14615 7.18936 5.14615 6.95364 4.98901 6.7965L4.08544 5.89293L8.24972 5.89293C8.48544 5.89293 8.64258 5.73578 8.64258 5.50007C8.64258 5.26436 8.48544 5.10721 8.24972 5.10721L4.08544 5.10721L4.98901 4.20364C5.14615 4.0465 5.14615 3.81078 4.98901 3.65364C4.91044 3.57507 4.79258 3.53578 4.71401 3.53578C4.63544 3.53578 4.51758 3.57507 4.43901 3.65364L2.86758 5.22507C2.82829 5.26436 2.78901 5.30364 2.78901 5.34293C2.74972 5.46078 2.74972 5.53936 2.78901 5.65721Z"
+                  fill="white"
+                />
+              </svg>
+            </button>
+            <div className="flex flex-col w-full max-w-[120px]">
+              <svg
+                width="100%"
+                height="auto"
+                viewBox="0 0 120 33"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M30.4363 0.223999C31.2523 0.223999 31.8683 0.511999 32.2843 1.088C32.7003 1.648 32.7963 2.328 32.5723 3.128L30.7243 10.088C30.5003 10.888 30.0283 11.576 29.3083 12.152C28.5883 12.728 27.8203 13.016 27.0043 13.016H24.4603L23.3563 17H20.0683L23.7163 2.888L25.2763 3.776L22.9483 0.199999L30.4363 0.223999ZM27.2443 10.088L29.1403 2.96H26.0923L26.9323 3.824L25.4203 9.416H23.8843L25.2523 10.088H27.2443ZM33.5931 14.072H38.8011L36.5691 17H30.6171L34.4091 2.888L35.9451 3.776L33.6171 0.199999H38.5851L35.0331 13.472L33.5931 14.072ZM43.3433 0.199999H49.9433L48.2153 17H44.7353L44.9993 14.888H41.3273L42.1433 15.536L41.5433 17H38.0632L44.1593 2.888L45.6953 3.776L43.3433 0.199999ZM45.3833 11.792L46.1513 5.792L43.6793 11.792H45.3833ZM59.9147 0.199999H63.3707L61.5947 6.896C61.3387 7.808 60.8587 8.648 60.1547 9.416C59.4667 10.168 58.6667 10.728 57.7547 11.096L56.1707 17H52.6907L54.0107 12.104H56.0267L54.2267 11.264C53.3947 10.944 52.7947 10.384 52.4267 9.584C52.0747 8.784 52.0347 7.888 52.3067 6.896L53.3627 2.888L54.9227 3.776L52.5947 0.199999H57.5867L55.3307 8.624H59.4107L57.8507 7.88L59.9147 0.199999ZM70.1863 0.223999C71.0023 0.223999 71.6183 0.511999 72.0343 1.088C72.4503 1.648 72.5463 2.328 72.3223 3.128L70.4743 10.088C70.2503 10.888 69.7783 11.576 69.0583 12.152C68.3383 12.728 67.5703 13.016 66.7543 13.016H64.2103L63.1063 17H59.8183L63.4663 2.888L65.0263 3.776L62.6983 0.199999L70.1863 0.223999ZM66.9943 10.088L68.8903 2.96H65.8423L66.6823 3.824L65.1703 9.416H63.6343L65.0023 10.088H66.9943ZM73.3671 0.199999H78.3351L73.7991 17H70.3671L74.1591 2.888L75.6951 3.776L73.3671 0.199999ZM83.5671 3.128L80.8551 13.304L79.2711 14.072H85.2471L84.6951 17H79.2471C78.4311 17 77.8151 16.72 77.3991 16.16C76.9831 15.584 76.8871 14.888 77.1111 14.072L80.1111 2.888L81.6711 3.776L79.3191 0.199999H89.1831L87.8631 3.128H83.5671ZM100.365 0.199999L95.9972 6.632L93.8852 7.376L95.4692 7.4V17H91.9172L91.7732 11.072L93.3092 10.592H91.6052L89.8772 17H86.4452L90.2372 2.888L91.7732 3.776L89.4452 0.199999H94.4132L92.4932 7.304L97.3892 0.199999H100.365Z"
+                  fill="#F9F9FB"
+                />
+                <path
+                  opacity="0.5"
+                  d="M27.9851 25.442C28.2744 25.442 28.5404 25.512 28.7831 25.652C29.0257 25.792 29.2171 25.988 29.3571 26.24C29.4971 26.4827 29.5671 26.7487 29.5671 27.038V29.404C29.5671 29.8427 29.4131 30.2207 29.1051 30.538C28.7971 30.846 28.4237 31 27.9851 31H25.1991L25.2691 29.292H27.5511V27.136H26.1931C25.7544 27.136 25.3764 26.982 25.0591 26.674C24.7511 26.3567 24.5971 25.9787 24.5971 25.54V22.796C24.5971 22.3573 24.7511 21.984 25.0591 21.676C25.3764 21.3587 25.7544 21.2 26.1931 21.2H28.9371L28.8671 22.908H26.6271V25.442H27.9851ZM32.4712 26.184V29.292H35.1452L34.3192 31H30.4272V21.2H34.3332L35.1452 22.908H32.4712V24.672H33.9972L34.7252 26.184H32.4712ZM37.8986 31H35.8686V21.2H37.8986V31ZM43.8291 21.2V22.908L40.9031 29.292H43.7731L43.5771 31H38.6351V29.292L41.5611 22.908H38.8171L39.2091 21.2H43.8291ZM46.6489 26.184V29.292H49.3229L48.4969 31H44.6049V21.2H48.5109L49.3229 22.908H46.6489V24.672H48.1749L48.9029 26.184H46.6489ZM57.6422 21.2L58.0762 22.908H56.3402V31H56.1302H54.5202H54.3102V22.908H53.0082L52.5602 21.2H57.6422ZM62.2319 21.2H64.2619V31H62.2319V26.884H60.5939V31H58.5639V21.2H60.5939V25.064H62.2319V21.2ZM67.4302 26.184V29.292H70.1042L69.2782 31H65.3862V21.2H69.2922L70.1042 22.908H67.4302V24.672H68.9562L69.6842 26.184H67.4302ZM79.1375 22.922V27.08C79.1375 27.5187 78.9788 27.8967 78.6615 28.214C78.3535 28.522 77.9801 28.676 77.5415 28.676H76.0295V31H73.9995V21.214H77.4295C77.8961 21.214 78.2975 21.382 78.6335 21.718C78.9695 22.0447 79.1375 22.446 79.1375 22.922ZM77.1075 26.968V22.908H76.0295V26.968H77.1075ZM82.0588 29.292H84.3408L83.4868 31H80.0288V21.2H82.0588V29.292ZM88.4129 21.2L89.6729 28.858L89.6589 31H88.0069L87.8249 29.768H86.3129L86.1449 31H84.4789L84.4649 28.858L85.7249 21.2H88.4129ZM86.5789 27.962H87.5729L87.0689 24.462L86.5789 27.962ZM93.4164 21.2H95.4464V25.778C95.4464 26.2447 95.283 26.6413 94.9564 26.968C94.6297 27.2947 94.2377 27.4627 93.7804 27.472V31H91.7504V27.472C91.2837 27.4627 90.887 27.2947 90.5604 26.968C90.243 26.6413 90.0844 26.2447 90.0844 25.778V21.2H92.1144V25.778H93.4164V21.2Z"
+                  fill="#F9F9FB"
+                />
+              </svg>
+            </div>
+            {/* HEADING */}
+            <div className="h-[1px] w-full bg-cpb-basewhite opacity-25"></div>
+            {/* MAIN NAVIGATION */}
+            <div className="flex flex-col gap-2 justify-center items-start">
+              <Link className="flex justify-center items-center gap-2" href="/">
+                <div className="w-4 h-4">
+                  <SvgIcon name="play" />
+                </div>
+                <p>PLAY</p>
+              </Link>
+              <Link className="flex justify-center items-center gap-2" href="/">
+                <div className="w-4 h-4">
+                  <SvgIcon name="standings" />
+                </div>
+                <p>STANDINGS</p>
+              </Link>
+              <Link className="flex justify-center items-center gap-2" href="/">
+                <div className="w-4 h-4">
+                  <SvgIcon name="earn" />
+                </div>
+                <p>EARN</p>
+              </Link>
+              <Link className="flex justify-center items-center gap-2" href="/">
+                <div className="w-4 h-4">
+                  <SvgIcon name="win" />
+                </div>
+                <p>WIN</p>
+              </Link>
+              <Link className="flex justify-center items-center gap-2" href="/">
+                <div className="w-4 h-4">
+                  <SvgIcon name="profile" />
+                </div>
+                <p>PROFILE</p>
+              </Link>
+            </div>
+            <div className="h-[1px] w-full bg-cpb-basewhite opacity-25"></div>
+            {/* OTHER NAVIGATION */}
+            <div className="flex flex-col gap-2 justify-center items-start">
+              <Link className="flex justify-center items-center gap-2" href="/">
+                <div className="w-4 h-4">
+                  <SvgIcon name="win" />
+                </div>
+                <p>RULES</p>
+              </Link>
+              <Link className="flex justify-center items-center gap-2" href="/">
+                <div className="w-4 h-4">
+                  <SvgIcon name="profile" />
+                </div>
+                <p>FEEDBACK</p>
+              </Link>
+            </div>
+            <div className="h-[1px] w-full bg-cpb-basewhite opacity-25"></div>
+            {/* BOTTOM NAVIGATION */}
+            <div className="flex flex-col gap-2 justify-center items-start">
+              <Link className="flex justify-center items-center gap-2" href="/">
+                <div className="w-4 h-4">
+                  <SvgIcon name="play" />
+                </div>
+                <p>TERMS OF USE</p>
+              </Link>
+              <Link className="flex justify-center items-center gap-2" href="/">
+                <div className="w-4 h-4">
+                  <SvgIcon name="standings" />
+                </div>
+                <p>PRIVACY</p>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 };

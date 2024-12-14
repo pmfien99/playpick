@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { useGame } from "@/app/_context/gameContext";
 import { useUser } from "@/app/_context/usercontext";
 import { createClient } from "@/app/_lib/supabase/client";
-import { usePastPicks } from "@/app/_context/pastPicksContext";
 
 type PastPick = {
   pick_type: string;
@@ -18,13 +17,12 @@ type PastPick = {
 const supabaseClient = createClient();
 
 const PastPicks = () => {
-  const { pastPicksData, refreshPastPicks } = usePastPicks();
-  const { isMatchActive, driveId, playId } = useGame();
+  const { isMatchActive, matchData, play_state } = useGame();
   const { user } = useUser();
 
   useEffect(() => {
-    if (user?.player_id && driveId) {
-      refreshPastPicks(user.player_id, driveId);
+    if (user?.player_id && matchData?.drive_id) {
+      refreshPastPicks(user.player_id, matchData.drive_id);
     }
 
     const playerPicksSubscription = supabaseClient

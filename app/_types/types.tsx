@@ -5,14 +5,6 @@ export type Team = {
   logo_url: string;
 };
 
-export type Drive = {
-  drive_id: string;
-  is_active: boolean;
-  match_id: string;
-  start_time: string;
-  team_id: string;
-};
-
 export enum PlayState {
   OPEN = "play_open",
   STARTED = "play_started",

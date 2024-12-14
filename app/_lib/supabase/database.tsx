@@ -490,42 +490,42 @@ export async function getLeaderboard() {
 export async function getPastPicks(player_id: string, drive_id: string) {
   const supabase = createClient();
 
-  try {
-    const { data: allPlaysData, error: allPlaysError } = await supabase
-      .from("plays")
-      .select("play_id, play_type, play_distance")
-      .eq("drive_id", drive_id)
-      .order("created_at", { ascending: false })
-      .limit(3);
+  // try {
+  //   const { data: allPlaysData, error: allPlaysError } = await supabase
+  //     .from("plays")
+  //     .select("play_id, play_type, play_distance")
+  //     .eq("drive_id", drive_id)
+  //     .order("created_at", { ascending: false })
+  //     .limit(3);
 
-    if (allPlaysError) throw allPlaysError;
+  //   if (allPlaysError) throw allPlaysError;
 
-    const { data: pastPicksData, error: pastPicksError } = await supabase
-      .from("player_picks")
-      .select("pick_type, pick_distance, points_allocated, play_id, is_ignored")
-      .eq("player_id", player_id)
-      .eq("drive_id", drive_id);
+  //   const { data: pastPicksData, error: pastPicksError } = await supabase
+  //     .from("player_picks")
+  //     .select("pick_type, pick_distance, points_allocated, play_id, is_ignored")
+  //     .eq("player_id", player_id)
+  //     .eq("drive_id", drive_id);
 
-    if (pastPicksError) throw pastPicksError;
+  //   if (pastPicksError) throw pastPicksError;
 
-    const pastPicks = allPlaysData.map((play) => {
-      const pick = pastPicksData.find(pick => pick.play_id === play.play_id);
-      return {
-        play_id: play.play_id,
-        play_type: play.play_type,
-        play_distance: play.play_distance,
-        pick_type: pick?.pick_type || null,
-        pick_distance: pick?.pick_distance || null,
-        points_allocated: pick?.points_allocated || 0,
-        is_ignored: pick?.is_ignored || false,
-      };
-    });
+  //   const pastPicks = allPlaysData.map((play) => {
+  //     const pick = pastPicksData.find(pick => pick.play_id === play.play_id);
+  //     return {
+  //       play_id: play.play_id,
+  //       play_type: play.play_type,
+  //       play_distance: play.play_distance,
+  //       pick_type: pick?.pick_type || null,
+  //       pick_distance: pick?.pick_distance || null,
+  //       points_allocated: pick?.points_allocated || 0,
+  //       is_ignored: pick?.is_ignored || false,
+  //     };
+  //   });
 
-    return pastPicks;
-  } catch (error) {
-    console.error("Error fetching past picks:", error);
-    throw error;
-  }
+  //   return pastPicks;
+  // } catch (error) {
+  //   console.error("Error fetching past picks:", error);
+  //   throw error;
+  // }
 }
 
 

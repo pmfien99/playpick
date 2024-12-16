@@ -25,7 +25,7 @@ const GameDisplay = () => {
       case 4:
         return "Fourth Down";
       default:
-        return "Unknown Down";
+        return "Break";
     }
   })();
 
@@ -33,7 +33,7 @@ const GameDisplay = () => {
 
 
   return (
-    <div className="flex flex-row w-full justify-center gap-4 my-6">
+    <div className="flex flex-row w-full justify-center gap-4 my-4">
       <div className="w-16 h-16 relative">
         <Image
           width={64}

@@ -234,7 +234,42 @@ export async function startPlay(play_id: string) {
 }
 
 
+/**
+ * Checks if a player has submitted a pick for a given play
+ * @param {string} match_id
+ * @param {string} play_id
+ * @param {string} player_id
+ * @returns {Promise<boolean>}
+ */
+export async function checkSubmissionExists(play_id: string, player_id: string) {
+  const supabase = createClient();
+  try {
+    const { data, error } = await supabase
+      .from("player_picks")
+      .select("*")
+      .eq("play_id", play_id)
+      .eq("player_id", player_id)
+      .maybeSingle()
 
+    if (error) throw error;
+
+    return !!data;
+  } catch (error) {
+    console.error("Error checking submission state:", error);
+    throw error;
+  }
+}
+
+
+/**
+ * Updates the scores for a given play
+ * @param {string} play_id
+ * @param {string} match_id
+ * @param {string} actual_type
+ * @param {string} actual_distance
+ * @param {boolean} is_ignored
+ * @returns {Promise<{ data: any; error: any }>}
+ */
 export async function updateScoresforPlay(
   play_id: string,
   match_id: string,
@@ -246,11 +281,11 @@ export async function updateScoresforPlay(
   const maxRetries = 3;
 
   const CORRECT_MULTIPLIERS = {
-    "run-short": 2,
-    "pass-short": 3,
-    "run-med": 10,
-    "pass-med": 7,
-    "run-long": 50,
+    "run-short": 3,
+    "pass-short": 10,
+    "run-med": 5,
+    "pass-med": 3,
+    "run-long": 90,
     "pass-long": 20,
   };
 
@@ -269,8 +304,6 @@ export async function updateScoresforPlay(
     console.log("playerPick", playerPick);
     const playerId = playerPick.player_id;
     const playerBalance = (await getCoinBalance(playerId)).coin_balance;
-
-    console.log("playerBalance", playerBalance);
 
     // REFUND THE PLAYERS IF THE PICKS IS IGNORED
     if (is_ignored) {
@@ -431,7 +464,7 @@ export async function getCoinBalance(player_id: string) {
       .single();
 
     if (error) throw error;
-    return data;
+    return data.coin_balance;
   } catch (error) {
     console.error("Error fetching coin balance:", error);
     throw error;
@@ -482,50 +515,56 @@ export async function getLeaderboard() {
 
 
 /**
- * Gets the past picks for a given player in a given drive, including the last 3 plays without picks
+ * Gets the past picks for a given player, including their guess, the actual result, and the change in balance
  * @param {string} player_id
- * @param {string} drive_id
- * @returns {Promise<{ data: any; error: any }>}
+ * @returns {Promise<any[]>}
  */
-export async function getPastPicks(player_id: string, drive_id: string) {
+export async function getPastPicks(player_id: string) {
   const supabase = createClient();
 
-  // try {
-  //   const { data: allPlaysData, error: allPlaysError } = await supabase
-  //     .from("plays")
-  //     .select("play_id, play_type, play_distance")
-  //     .eq("drive_id", drive_id)
-  //     .order("created_at", { ascending: false })
-  //     .limit(3);
+  try {
+    // Fetch past picks with the necessary details
+    const { data: pastPicksData, error: pastPicksError } = await supabase
+      .from("player_picks")
+      .select("pick_type, pick_distance, points_wagered, points_allocated, play_id")
+      .eq("player_id", player_id)
+      .order("created_at", { ascending: false })
+      .limit(50);
 
-  //   if (allPlaysError) throw allPlaysError;
+    if (pastPicksError) throw pastPicksError;
 
-  //   const { data: pastPicksData, error: pastPicksError } = await supabase
-  //     .from("player_picks")
-  //     .select("pick_type, pick_distance, points_allocated, play_id, is_ignored")
-  //     .eq("player_id", player_id)
-  //     .eq("drive_id", drive_id);
+    // Fetch the actual results of the plays
+    const playIds = pastPicksData.map(pick => pick.play_id);
+    const { data: playsData, error: playsError } = await supabase
+      .from("plays")
+      .select("play_id, play_type, play_distance")
+      .in("play_id", playIds);
 
-  //   if (pastPicksError) throw pastPicksError;
+    if (playsError) throw playsError;
 
-  //   const pastPicks = allPlaysData.map((play) => {
-  //     const pick = pastPicksData.find(pick => pick.play_id === play.play_id);
-  //     return {
-  //       play_id: play.play_id,
-  //       play_type: play.play_type,
-  //       play_distance: play.play_distance,
-  //       pick_type: pick?.pick_type || null,
-  //       pick_distance: pick?.pick_distance || null,
-  //       points_allocated: pick?.points_allocated || 0,
-  //       is_ignored: pick?.is_ignored || false,
-  //     };
-  //   });
+    // Combine the data to include the player's guess, actual result, and balance change
+    const pastPicks = pastPicksData.map(pick => {
+      const play = playsData.find(play => play.play_id === pick.play_id);
+      const balanceChange = (pick.points_allocated || 0) - (pick.points_wagered || 0);
+      return {
+        play_id: pick.play_id,
+        guess: {
+          type: pick.pick_type,
+          distance: pick.pick_distance,
+        },
+        actual: {
+          type: play?.play_type || null,
+          distance: play?.play_distance || null,
+        },
+        balanceChange,
+      };
+    });
 
-  //   return pastPicks;
-  // } catch (error) {
-  //   console.error("Error fetching past picks:", error);
-  //   throw error;
-  // }
+    return pastPicks;
+  } catch (error) {
+    console.error("Error fetching past picks:", error);
+    throw error;
+  }
 }
 
 
@@ -599,26 +638,59 @@ export async function playerSubmitPlay(
 }
 
 /**
- * Undoes a play in the "player_picks" table
+ * Undoes a play in the "player_picks" table and refunds the player's bet amount
  * @param {string} match_id
  * @param {string} player_id
  * @param {string} play_id
- * @returns {Promise<{ data: any; error: any }>}
+ * @returns {Promise<{ data: any; error: any }> }
  */
-export async function undoPlay(  
+export async function undoPlay(
   match_id: string,
   player_id: string,
   play_id: string
 ) {
   const supabase = createClient();
   try {
-    const { data, error } = await supabase.from("player_picks").delete()
+    const { data: pickData, error: pickError } = await supabase
+      .from("player_picks")
+      .select("points_wagered")
+      .eq("match_id", match_id)
+      .eq("player_id", player_id)
+      .eq("play_id", play_id)
+      .single();
+
+    if (pickError) throw pickError;
+
+    const betAmount = pickData?.points_wagered || 0;
+
+    const { error: deleteError } = await supabase
+      .from("player_picks")
+      .delete()
       .eq("match_id", match_id)
       .eq("player_id", player_id)
       .eq("play_id", play_id);
 
-    if (error) throw error;
-    return data;
+    if (deleteError) throw deleteError;
+
+    const { data: playerData, error: playerError } = await supabase
+      .from("players")
+      .select("coin_balance")
+      .eq("player_id", player_id)
+      .single();
+
+    if (playerError) throw playerError;
+
+    const currentBalance = playerData.coin_balance;
+
+    const newBalance = currentBalance + betAmount;
+    const { error: updateError } = await supabase
+      .from("players")
+      .update({ coin_balance: newBalance })
+      .eq("player_id", player_id);
+
+    if (updateError) throw updateError;
+
+    return { success: true };
   } catch (error) {
     console.error("Error undoing play:", error);
     throw error;

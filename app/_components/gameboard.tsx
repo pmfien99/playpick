@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useGame } from "../_context/gameContext";
 import { useUser } from "../_context/usercontext";
-import { playerSubmitPlay, undoPlay } from "../_lib/supabase/database";
+import {
+  checkSubmissionExists,
+  getCoinBalance,
+  playerSubmitPlay,
+  undoPlay,
+} from "../_lib/supabase/database";
 import { createClient } from "@/app/_lib/supabase/client";
 import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
@@ -12,8 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Balance from "./atoms/balance";
 import GameDisplay from "./atoms/gameDisplay";
 import SvgCoin from "./icons/svgCoin";
-import useSound from 'use-sound';
-
+import useSound from "use-sound";
 
 const FormSchema = z.object({
   playType: z.enum(["pass", "run"]),
@@ -49,8 +53,16 @@ const ToggleButton = <T extends string>({
     onClick={onClick}
     aria-pressed={isSelected}
     className={`rounded-full flex-1 py-2 text-[20px] font-regular focus:outline-none transition-colors duration-200 ${
-      isSelected ? "bg-cpb-darkgreen text-white" : ""
+      isSelected ? "bg-cpb-basewhite text-cpb-basewhite" : ""
     }`}
+    style={
+      isSelected
+        ? {
+            background: "linear-gradient(180deg, #142F25 0.67%, #0C1D17 100%)",
+            boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.25)",
+          }
+        : {}
+    }
   >
     <div className="flex flex-col items-center">
       <span>{option.label}</span>
@@ -86,11 +98,11 @@ const ToggleButtonGroup = <T extends string>({
 const supabaseClient = createClient();
 
 const odds = {
-  "short-run": 2,
-  "short-pass": 3,
-  "med-run": 10,
-  "med-pass": 7,
-  "long-run": 50,
+  "short-run": 3,
+  "short-pass": 10,
+  "med-run": 5,
+  "med-pass": 3,
+  "long-run": 90,
   "long-pass": 20,
 };
 
@@ -115,9 +127,29 @@ const Gameboard = () => {
   const { user } = useUser();
   const { isMatchActive, matchData, play_state, play_id } = useGame();
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  const [playSubmitSound] = useSound('/sfx/submit.wav');
+  const [playSubmitSound] = useSound("/sfx/submit.wav");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const calculatePayout = (playType: "run" | "pass", playLength: "short" | "med" | "long", playBet: number) => {
+  const showError = (message: string) => {
+    setErrorMessage(message);
+  };
+
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+      }, 2000); // 2 seconds
+
+      // Cleanup the timer on component unmount or when errorMessage changes
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
+
+  const calculatePayout = (
+    playType: "run" | "pass",
+    playLength: "short" | "med" | "long",
+    playBet: number
+  ) => {
     const key = `${playLength}-${playType}` as keyof typeof odds;
     const multiplier = odds[key] || 0;
     return playBet * multiplier;
@@ -137,29 +169,23 @@ const Gameboard = () => {
   const playBetValue = betValues[watch("playBet")];
   const winAmount = calculatePayout(playType, playLength, playBetValue);
 
-
-
-  const checkSubmissionState = async () => {
+  const checkSubmissionState = async (): Promise<boolean> => {
     if (matchData?.matchId && play_id) {
-      const { data, error } = await supabaseClient
-        .from("player_picks")
-        .select("*")
-        .eq("match_id", matchData.matchId)
-        .eq("play_id", play_id)
-        .eq("player_id", user.player_id)
-        .maybeSingle();
+      const submissionExists: boolean = await checkSubmissionExists(
+        play_id,
+        user.player_id
+      );
+      console.log(play_id, user.player_id);
 
-      if (error) {
-        console.error("Error checking submission:", error);
-        return false;
-      }
+      console.log("submission data", submissionExists);
 
-      return !!data;
+      return submissionExists;
     }
     return false;
   };
 
   const fetchSubmissionStatus = async () => {
+    console.log("fetching submission status");
     const submissionExists = await checkSubmissionState();
     setIsSubmitted(submissionExists);
   };
@@ -177,6 +203,14 @@ const Gameboard = () => {
 
   const onSubmit = async (data: FormData) => {
     const matchId = matchData?.matchId;
+    const playBetValue = betValues[data.playBet];
+    const userBalance = await getCoinBalance(user.player_id);
+
+    if (playBetValue > userBalance) {
+      setErrorMessage("Insufficient balance.");
+      return;
+    }
+
     if (matchId && play_id) {
       await playerSubmitPlay(
         matchId,
@@ -186,7 +220,7 @@ const Gameboard = () => {
         data.playLength,
         Number(data.playBet)
       );
-      playSubmitSound()
+      playSubmitSound();
       await fetchSubmissionStatus();
     }
   };
@@ -210,18 +244,18 @@ const Gameboard = () => {
     };
   }, [user.player_id]);
 
-  const isFormActive = isMatchActive && play_id != null;
+  const isFormActive = isMatchActive && play_id != null && play_state === "play_open";
 
   return (
     <div className="font-flick">
       <Balance />
       <GameDisplay />
       <form
-        className="w-full text-cpb-basewhite flex flex-col justify-center items-center px-10 py-5 min-h-[290px]"
+        className="w-full text-cpb-basewhite flex flex-col justify-center items-center px-10 min-h-[290px]"
         onSubmit={handleSubmit(onSubmit)}
       >
         <div
-          className={`flex flex-col gap-4 min-w-full ${
+          className={`flex flex-col gap-[10px] min-w-full ${
             !isFormActive || isSubmitted
               ? "opacity-50 cursor-default pointer-events-none"
               : ""
@@ -248,9 +282,9 @@ const Gameboard = () => {
             render={({ field }) => (
               <ToggleButtonGroup
                 options={[
-                  { value: "short", label: "Short", subtext: "< 5yds" },
-                  { value: "med", label: "Medium", subtext: "5-20yds" },
-                  { value: "long", label: "Long", subtext: "20< yds" },
+                  { value: "short", label: "Short" },
+                  { value: "med", label: "Medium" },
+                  { value: "long", label: "Long" },
                 ]}
                 selectedOption={field.value}
                 onChange={field.onChange}
@@ -279,50 +313,81 @@ const Gameboard = () => {
 
           {isFormActive ? (
             isSubmitted ? (
-              <button
-                type="button"
-                className="bg-cpb-darkgreen uppercase text-lg font-bold w-full border-cpb-darkgreen border-2 rounded-xl py-3 shadow-lg flex flex-row justify-center items-center gap-2"
-              >
-                PICK SUBMITTED
-                <Image
-                  width={20}
-                  height={20}
-                  src="/check-icon.svg"
-                  alt="checkmark"
-                  className="w-5 h-5"
-                />
-              </button>
+              <></>
             ) : (
               <button
                 type="submit"
-                className="bg-cpb-darkgreen uppercase text-lg font-bold w-full border-cpb-darkgreen border-2 rounded-xl py-4 px-2 shadow-lg flex flex-row justify-center gap-4 items-center"
+                className="h-[65px] bg-cpb-darkgreen uppercase text-lg font-bold w-full border-none rounded-full shadow-lg flex flex-row justify-center gap-4 items-center"
+                style={{
+                  background:
+                    "linear-gradient(180deg, #142F25 0.67%, #0C1D17 100%)",
+                  boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.25)",
+                  borderRadius: "50px",
+                  textShadow: "0px 0px 5.85859px rgba(255, 255, 255, 0.5)",
+                }}
               >
-                <div className="flex flex-row items-top gap-2">
-                  <div className="flex flex-col items-center mb-auto gap-1">
-                    <p className="leading-none [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]">BET</p>
-                    <div className="ml-auto w-4 h-4">
-                      <SvgCoin />
+                <div className="flex flex-row justify-around items-center w-full">
+                  <div className="flex flex-row gap-2">
+                    <div className="flex flex-row items-center gap-1 justify-normal">
+                      <p
+                        className="leading-[80%]"
+                        style={{
+                          background:
+                            "linear-gradient(180deg, #EAE205 0%, #FED45F 100%)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                          backgroundClip: "text",
+                          textShadow:
+                            "0px 0px 3.42059px rgba(216, 210, 0, 0.5)",
+                        }}
+                      >
+                        BET
+                      </p>
+                      <div className="ml-auto w-4 h-4">
+                        <SvgCoin />
+                      </div>
                     </div>
+                    <p className="text-cpb-basewhite text-[35px] leading-[80%]">
+                      {formatNumber(playBetValue)}
+                    </p>
                   </div>
-                  <p className="text-cpb-basewhite text-[52px] leading-[80%] [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]">
-                    {formatNumber(playBetValue)}
-                  </p>
+
+                  <div className="flex flex-row gap-2">
+                    <div className="flex flex-row items-center gap-1 justify-normal">
+                      <p
+                        className="leading-[80%]"
+                        style={{
+                          background:
+                            "linear-gradient(180deg, #EAE205 0%, #FED45F 100%)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "transparent",
+                          backgroundClip: "text",
+                          textShadow:
+                            "0px 0px 3.42059px rgba(216, 210, 0, 0.5)",
+                        }}
+                      >
+                        WIN
+                      </p>
+                      <div className="ml-auto w-4 h-4">
+                        <SvgCoin />
+                      </div>
+                    </div>
+                    <p className="text-cpb-basewhite text-[35px] leading-[80%]">
+                      {formatNumber(winAmount)}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="uppercase text-2xl font-normal py-1 border-[#EAE107] border-[.4px] rounded-xl px-4">
+                <div
+                  className="ml-auto uppercase rounded-full border-[#EEDF18] border-[.5px] py-0 px-0 h-full min-w-[65px] flex items-center justify-center"
+                  style={{
+                    textShadow: "0px 0px 5.85859px rgba(255, 255, 255, 0.5)",
+                    border: "0.585859px solid #EEDF18",
+                    boxShadow:
+                      "0px 0px 1.17172px #FED45F, -5.85859px 0px 5.85859px rgba(0, 0, 0, 0.5)",
+                  }}
+                >
                   SUBMIT
-                </div>
-
-                <div className="flex flex-row items-top gap-2">
-                  <div className="flex flex-col items-center mb-auto gap-1">
-                    <p className="leading-none [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]">WIN</p>
-                    <div className="ml-auto w-4 h-4">
-                      <SvgCoin />
-                    </div>
-                  </div>
-                  <p className="text-cpb-basewhite text-[52px] leading-[80%] [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]">
-                    {formatNumber(winAmount)}
-                  </p>
                 </div>
               </button>
             )
@@ -331,7 +396,83 @@ const Gameboard = () => {
               PICKS CLOSED
             </div>
           )}
+
+{errorMessage && (
+        <div className="error-message">
+          {errorMessage}
         </div>
+      )}
+        </div>
+        {isSubmitted && play_state === "play_open" && (
+          <div
+  className="h-[65px] uppercase text-lg font-bold w-full border-none rounded-full shadow-lg flex flex-row justify-center gap-4 items-center mt-[10px]"
+  style={{
+    background: "rgba(20, 47, 37, 0.5)", // Use rgba for semi-transparent background
+    boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.25)",
+    borderRadius: "50px",
+    textShadow: "0px 0px 5.85859px rgba(255, 255, 255, 0.5)",
+  }}
+>
+  <div className="flex flex-row justify-around items-center w-full">
+    <div className="flex flex-row gap-2 opacity-50">
+      <div className="flex flex-row items-center gap-1 justify-normal">
+        <p
+          className="leading-[80%]"
+          style={{
+            background: "linear-gradient(180deg, #EAE205 0%, #FED45F 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            textShadow: "0px 0px 3.42059px rgba(216, 210, 0, 0.5)",
+          }}
+        >
+          BET
+        </p>
+        <div className="ml-auto w-4 h-4">
+          <SvgCoin />
+        </div>
+      </div>
+      <p className="text-cpb-basewhite text-[35px] leading-[80%]">
+        {formatNumber(playBetValue)}
+      </p>
+    </div>
+
+    <div className="flex flex-row gap-2 opacity-50">
+      <div className="flex flex-row items-center gap-1 justify-normal">
+        <p
+          className="leading-[80%]"
+          style={{
+            background: "linear-gradient(180deg, #EAE205 0%, #FED45F 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            textShadow: "0px 0px 3.42059px rgba(216, 210, 0, 0.5)",
+          }}
+        >
+          WIN
+        </p>
+        <div className="ml-auto w-4 h-4">
+          <SvgCoin />
+        </div>
+      </div>
+      <p className="text-cpb-basewhite text-[35px] leading-[80%]">
+        {formatNumber(winAmount)}
+      </p>
+    </div>
+  </div>
+
+  <div
+    className="ml-auto uppercase rounded-full border-cpb-basewhite bg-cpb-basewhite text-cpb-baseblack border-[0px] py-0 px-0 h-full min-w-[65px] flex items-center justify-center cursor-pointer"
+    onClick={handleUndo}
+    style={{
+      textShadow: "0px 0px 5.85859px rgba(255, 255, 255, 0.5)",
+      boxShadow: "-5.85859px 0px 5.85859px rgba(0, 0, 0, 0.5)",
+    }}
+  >
+    UNDO
+  </div>
+</div>
+        )}
       </form>
       <div className="w-full px-10 pb-5"></div>
     </div>

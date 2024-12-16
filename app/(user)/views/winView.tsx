@@ -34,13 +34,15 @@ const WinView = () => {
           Cash in coins for sweepstakes! Winners will get emailed.
         </p>
       </div>
+      <div className="flex justify-center items-center max-w-full mx-10 mt-6">
       <Image
         width={359}
         height={329}
         src={"/placeholder-entry.svg"}
         alt="entry-placeholder"
-        className="h-auto mx-10 mt-6 shadow-xl"
+        className="h-auto shadow-xl"
       />
+      </div>
     </div>
   );
 };

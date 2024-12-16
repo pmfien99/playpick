@@ -6,7 +6,7 @@ import Image from "next/image";
 const ProfileView = () => {
   return (
     <div>
-      <div className="flex flex-col items-center justify-center align-center">
+      <div className="flex flex-col items-center justify-center align-center text-center">
       <SvgIcon className="w-[153px] h-[115px] text-[#90CAC2]" name="profile" />
       <p className="text-[20px] font-flick text-cpb-basewhite drop-shadow-md">Coming Soon</p>
       <h1 className="text-[50px] font-flick leading-[50px] drop-shadow-md">Level up your look!</h1>
@@ -30,13 +30,15 @@ const ProfileView = () => {
           Fill your bag now, unlock gear later.
           </p>
         </div>
+        <div className="flex justify-center items-center max-w-full mx-10 mt-6">
         <Image
         width={359}
         height={329}
         src={"/locker-placeholder.svg"}
         alt="locker-placeholder"
-        className="h-auto mx-10 mt-12 shadow-xl"
+        className="h-auto shadow-xl"
       />
+      </div>
     </div>
   );
 };

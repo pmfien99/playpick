@@ -59,12 +59,9 @@ export default function Page() {
 
   return (
     <div className="min-w-full">
-      <h1 className="text-3xl font-bold mt-4 w-full text-center text-cpb-baseblack">
-        Welcome!
+      <h1 className="text-[24px] font-bold font-flick w-full text-center text-[#1F1F1F] opacity-50">
+        Sign Up & Save Coins
       </h1>
-      <p className="text-cpb-baseblack text-sm mt-2 text-opacity-50 w-full text-center">
-        Create your account
-      </p>
       <form
         className="px-4 flex flex-col gap-4 mt-6 w-full"
         onSubmit={handleSubmit(onSubmit)}

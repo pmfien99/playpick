@@ -15,7 +15,7 @@ interface BalanceProps {
 }
 
 const Balance: React.FC<BalanceProps> = ({
-  textSize = "text-[100px]",
+  textSize = "text-[100px] md:text-[32px]",
   lineHeight = "leading-none",
   iconSize = "w-[18px] h-[18px]",
 }) => {

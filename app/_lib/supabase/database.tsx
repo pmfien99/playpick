@@ -301,9 +301,8 @@ export async function updateScoresforPlay(
   }
 
   for (const playerPick of playerPicks) {
-    console.log("playerPick", playerPick);
     const playerId = playerPick.player_id;
-    const playerBalance = (await getCoinBalance(playerId)).coin_balance;
+    const playerBalance = (await getCoinBalance(playerId));
 
     // REFUND THE PLAYERS IF THE PICKS IS IGNORED
     if (is_ignored) {
@@ -320,7 +319,7 @@ export async function updateScoresforPlay(
           throw new Error(`Error updating pick as ignored and setting points_allocated: ${ignoreAndUpdateError.message}`);
         }
 
-        const newBalance = playerBalance + playerPick.points_wagered;
+        const newBalance = Number(playerBalance) + Number(playerPick.points_wagered);
         await setCoinBalance(playerPick.player_id, newBalance);
 
       } catch (error) {
@@ -334,7 +333,7 @@ export async function updateScoresforPlay(
     // IF THEY ARE PARIALY CORRECT, REUND THE PLAYERS THEIR WAGER 
     if (playerPick.pick_type === actual_type && playerPick.pick_distance !== actual_distance) {
       try {
-        const newBalance = playerBalance + playerPick.points_wagered;
+        const newBalance = Number(playerBalance) + Number(playerPick.points_wagered);
         await setCoinBalance(playerPick.player_id, newBalance);
 
         // Update the player_pick table with the points_allocated
@@ -363,7 +362,7 @@ export async function updateScoresforPlay(
         const multiplier = CORRECT_MULTIPLIERS[outcomeKey as keyof typeof CORRECT_MULTIPLIERS] || 0;
 
         const points_allocated = playerPick.points_wagered * multiplier;
-        const newBalance = playerBalance + points_allocated;
+        const newBalance = Number(playerBalance) + Number(points_allocated);
         await setCoinBalance(playerPick.player_id, newBalance);
 
         // Update the player_pick table with the points_allocated
@@ -383,23 +382,26 @@ export async function updateScoresforPlay(
         throw error;
       }
     }
+    
 
     // IF IT GETS HERE THE PLAYER HAS LOST
-    try {
-      const { error: updatePickError } = await supabase
-        .from("player_picks")
-        .update({
-          is_correct: false,
-          points_allocated: 0
-        })
-        .eq("pick_id", playerPick.pick_id);
-
-      if (updatePickError) {
-        throw new Error(`Error updating points_allocated for lost pick: ${updatePickError.message}`);
+    if (playerPick.pick_type !== actual_type || playerPick.pick_distance !== actual_distance) {
+      try {
+        const { error: updatePickError } = await supabase
+          .from("player_picks")
+          .update({
+            is_correct: false,
+            points_allocated: 0
+          })
+          .eq("pick_id", playerPick.pick_id);
+  
+        if (updatePickError) {
+          throw new Error(`Error updating points_allocated for lost pick: ${updatePickError.message}`);
+        }
+      } catch (error) {
+        console.error(error);
+        throw error;
       }
-    } catch (error) {
-      console.error(error);
-      throw error;
     }
   }
 }
@@ -621,7 +623,7 @@ export async function playerSubmitPlay(
 
     if (playerError) throw playerError;
     const currentBalance = Number(playerData.coin_balance);
-    const newBalance = currentBalance - betValues[play_bet as keyof typeof betValues];
+    const newBalance = Number(currentBalance) - Number(betValues[play_bet as keyof typeof betValues]);
 
     const { error: balanceError } = await supabase
       .from("players")
@@ -682,7 +684,7 @@ export async function undoPlay(
 
     const currentBalance = playerData.coin_balance;
 
-    const newBalance = currentBalance + betAmount;
+    const newBalance = Number(currentBalance) + Number(betAmount);
     const { error: updateError } = await supabase
       .from("players")
       .update({ coin_balance: newBalance })

@@ -8,13 +8,12 @@ import WinView from "./views/winView";
 import ProfileView from "./views/profileView";
 import Link from "next/link";
 import SvgIcon from "@/app/_components/icons/svgIcon";
-import useSound from 'use-sound';
-
+import useSound from "use-sound";
 import { useState } from "react";
 
 export default function Page() {
   const [activeView, setActiveView] = useState("play");
-  const [playToggleSound] = useSound('/sfx/tab-switch.wav');
+  const [playToggleSound] = useSound("/sfx/tab-switch.wav");
 
   const getBackgroundStyle = () => {
     switch (activeView) {
@@ -41,15 +40,13 @@ export default function Page() {
       {activeView === "earn" && <EarnView />}
       {activeView === "win" && <WinView />}
       {activeView === "profile" && <ProfileView />}
-      <div
-        className="absolute h-[84px] flex flex-row bottom-0 left-0 right-0 py-2 px-8 bg-[#101010] rounded-t-3xl rounded-tl-3xl justify-between"
-        style={{ top: "calc(100vh - 84px)" }}
-      >
+      <div className="nav-bar">
         <Link
-          className={`flex flex-col items-center justify-center align-center ${activeView === "play" ? "text-[#00D4A1]" : "text-[#8B8B8C]"}`}
+          className={`flex flex-col items-center justify-center align-center ${
+            activeView === "play" ? "text-[#00D4A1]" : "text-[#8B8B8C]"
+          }`}
           href="/"
           onClick={() => {
-            playToggleSound();
             setActiveView("play");
           }}
         >
@@ -57,10 +54,11 @@ export default function Page() {
           <p className="text-current text-base font-flick">PLAY</p>
         </Link>
         <Link
-          className={`flex flex-col items-center justify-center align-center ${activeView === "standings" ? "text-[#5392D3]" : "text-[#8B8B8C]"}`}
+          className={`flex flex-col items-center justify-center align-center ${
+            activeView === "standings" ? "text-[#5392D3]" : "text-[#8B8B8C]"
+          }`}
           href="/"
           onClick={() => {
-            playToggleSound();
             setActiveView("standings");
           }}
         >
@@ -68,10 +66,11 @@ export default function Page() {
           <p className="text-current text-base font-flick">STANDINGS</p>
         </Link>
         <Link
-          className={`flex flex-col items-center justify-center align-center ${activeView === "earn" ? "text-[#FED45F]" : "text-[#8B8B8C]"}`}
+          className={`flex flex-col items-center justify-center align-center ${
+            activeView === "earn" ? "text-[#FED45F]" : "text-[#8B8B8C]"
+          }`}
           href="/"
           onClick={() => {
-            playToggleSound();
             setActiveView("earn");
           }}
         >
@@ -79,10 +78,11 @@ export default function Page() {
           <p className="text-current text-base font-flick">EARN</p>
         </Link>
         <Link
-          className={`flex flex-col items-center justify-center align-center ${activeView === "win" ? "text-[#8971D7]" : "text-[#8B8B8C]"}`}
+          className={`flex flex-col items-center justify-center align-center ${
+            activeView === "win" ? "text-[#8971D7]" : "text-[#8B8B8C]"
+          }`}
           href="/"
           onClick={() => {
-            playToggleSound();
             setActiveView("win");
           }}
         >
@@ -90,10 +90,11 @@ export default function Page() {
           <p className="text-current text-base font-flick">WIN</p>
         </Link>
         <Link
-          className={`flex flex-col items-center justify-center align-center ${activeView === "profile" ? "text-[#F9F9FB]" : "text-[#8B8B8C]"}`}
+          className={`flex flex-col items-center justify-center align-center ${
+            activeView === "profile" ? "text-[#F9F9FB]" : "text-[#8B8B8C]"
+          }`}
           href="/"
           onClick={() => {
-            playToggleSound();
             setActiveView("profile");
           }}
         >
@@ -101,6 +102,29 @@ export default function Page() {
           <p className="text-current text-base font-flick">PROFILE</p>
         </Link>
       </div>
+      <style jsx>{`
+.nav-bar {
+  position: fixed;
+  height: 84px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #101010;
+  border-radius: 1.5rem 1.5rem 0 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 2rem;
+}
+
+@media (min-width: 768px) {
+  .nav-bar {
+    position: absolute;
+    top: auto;
+    bottom: 0;
+  }
+}
+      `}</style>
     </div>
   );
 }
+

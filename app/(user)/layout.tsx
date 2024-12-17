@@ -24,7 +24,7 @@ export default function RootLayout({
               <body
               className={`${chakraPetch.className} bg-cpb-basewhite min-h-full`}
             >
-              <main className="flex content-center justify-center bg-cpb-basegreen bg-[url('../public/bg-texture.svg')] bg-repeat min-h-[100vh] max-h-[100vh] overflow-hidden">
+              <main className="flex content-center justify-center bg-cpb-basegreen bg-[url('../public/bg-texture.svg')] bg-repeat min-h-[100vh] max-h-[100vh] overflow-y-scroll">
                 <div className="flex flex-col w-full max-w-[430px] overflow-hidden">
                   {children}
                 </div>

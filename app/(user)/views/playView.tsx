@@ -7,7 +7,7 @@ const PlayView = () => {
   return (
     <div>
       <Gameboard />
-      {/* <PastBets />     */}
+      <PastBets />    
     </div>
   );
 };

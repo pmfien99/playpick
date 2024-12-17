@@ -323,7 +323,7 @@ const Gameboard = () => {
                     "linear-gradient(180deg, #142F25 0.67%, #0C1D17 100%)",
                   boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.25)",
                   borderRadius: "50px",
-                  textShadow: "0px 0px 5.85859px rgba(255, 255, 255, 0.5)",
+
                 }}
               >
                 <div className="flex flex-row justify-around items-center w-full">
@@ -337,8 +337,6 @@ const Gameboard = () => {
                           WebkitBackgroundClip: "text",
                           WebkitTextFillColor: "transparent",
                           backgroundClip: "text",
-                          textShadow:
-                            "0px 0px 3.42059px rgba(216, 210, 0, 0.5)",
                         }}
                       >
                         BET
@@ -362,8 +360,6 @@ const Gameboard = () => {
                           WebkitBackgroundClip: "text",
                           WebkitTextFillColor: "transparent",
                           backgroundClip: "text",
-                          textShadow:
-                            "0px 0px 3.42059px rgba(216, 210, 0, 0.5)",
                         }}
                       >
                         WIN
@@ -381,7 +377,6 @@ const Gameboard = () => {
                 <div
                   className="ml-auto uppercase rounded-full border-[#EEDF18] border-[.5px] py-0 px-0 h-full min-w-[65px] flex items-center justify-center"
                   style={{
-                    textShadow: "0px 0px 5.85859px rgba(255, 255, 255, 0.5)",
                     border: "0.585859px solid #EEDF18",
                     boxShadow:
                       "0px 0px 1.17172px #FED45F, -5.85859px 0px 5.85859px rgba(0, 0, 0, 0.5)",
@@ -410,7 +405,6 @@ const Gameboard = () => {
     background: "rgba(20, 47, 37, 0.5)", // Use rgba for semi-transparent background
     boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.25)",
     borderRadius: "50px",
-    textShadow: "0px 0px 5.85859px rgba(255, 255, 255, 0.5)",
   }}
 >
   <div className="flex flex-row justify-around items-center w-full">
@@ -423,7 +417,6 @@ const Gameboard = () => {
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
-            textShadow: "0px 0px 3.42059px rgba(216, 210, 0, 0.5)",
           }}
         >
           BET
@@ -446,7 +439,6 @@ const Gameboard = () => {
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
-            textShadow: "0px 0px 3.42059px rgba(216, 210, 0, 0.5)",
           }}
         >
           WIN
@@ -465,7 +457,6 @@ const Gameboard = () => {
     className="ml-auto uppercase rounded-full border-cpb-basewhite bg-cpb-basewhite text-cpb-baseblack border-[0px] py-0 px-0 h-full min-w-[65px] flex items-center justify-center cursor-pointer"
     onClick={handleUndo}
     style={{
-      textShadow: "0px 0px 5.85859px rgba(255, 255, 255, 0.5)",
       boxShadow: "-5.85859px 0px 5.85859px rgba(0, 0, 0, 0.5)",
     }}
   >

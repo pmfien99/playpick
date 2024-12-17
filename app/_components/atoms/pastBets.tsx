@@ -24,7 +24,7 @@ const PastBets = () => {
   };
 
   return (
-    <div className="bg-cpb-darkgreen w-full text-cpb-basewhite flex flex-col justify-center items-center px-10 py-5 pb-14 absolute bottom-[44px]">
+    <div className="bg-cpb-darkgreen w-full text-cpb-basewhite flex flex-col justify-center items-center px-10 py-5 pb-24 relative mt-5">
       <div className="grid grid-cols-4 gap-4 w-full text-center font-bold mb-4">
         <div>#</div>
         <div>PICK</div>

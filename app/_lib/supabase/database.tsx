@@ -403,7 +403,6 @@ export async function updateScoresforPlay(
         const { error: updatePickError } = await supabase
           .from("player_picks")
           .update({
-            is_correct: false,
             points_allocated: 0
           })
           .eq("pick_id", playerPick.pick_id);

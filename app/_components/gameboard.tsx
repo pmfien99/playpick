@@ -22,19 +22,21 @@ import useSound from "use-sound";
 const FormSchema = z.object({
   playType: z.enum(["pass", "run"]),
   playLength: z.enum(["short", "med", "long"]),
-  playBet: z.enum(["1", "2", "3", "4", "5", "6"]),
+  playBet: z.enum(["1", "2", "3"]),
 });
 
 type FormData = z.infer<typeof FormSchema>;
 
-interface OptionWithSubtext<T extends string> {
+interface OptionWithIcon<T extends string> {
   value: T;
   label: string;
-  subtext?: string;
+  icon?: string;
+  iconWidth?: number;
+  iconHeight?: number;
 }
 
 interface ToggleButtonGroupProps<T extends string> {
-  options: OptionWithSubtext<T>[];
+  options: OptionWithIcon<T>[];
   selectedOption: T;
   onChange: (value: T) => void;
 }
@@ -44,7 +46,7 @@ const ToggleButton = <T extends string>({
   isSelected,
   onClick,
 }: {
-  option: OptionWithSubtext<T>;
+  option: OptionWithIcon<T>;
   isSelected: boolean;
   onClick: () => void;
 }) => (
@@ -64,13 +66,9 @@ const ToggleButton = <T extends string>({
         : {}
     }
   >
-    <div className="flex flex-col items-center">
+    <div className="flex flex-row items-center justify-center gap-1">
+      <Image src={`/btn-icons/${option.icon}-btn.svg`} alt={`${option.label}-icon`} width={option.iconWidth || 15} height={option.iconHeight || 15} layout="intrinsic" />
       <span>{option.label}</span>
-      {option.subtext && (
-        <span className="text-xs text-cpb-basewhite opacity-85 font-chakra">
-          {option.subtext}
-        </span>
-      )}
     </div>
   </button>
 );
@@ -107,12 +105,9 @@ const odds = {
 };
 
 const betValues = {
-  "1": 10,
-  "2": 25,
-  "3": 50,
-  "4": 100,
-  "5": 250,
-  "6": 500,
+  "1": 100,
+  "2": 250,
+  "3": 500,
 };
 
 const formatNumber = (num: number): string => {
@@ -267,8 +262,8 @@ const Gameboard = () => {
             render={({ field }) => (
               <ToggleButtonGroup
                 options={[
-                  { value: "run", label: "Run" },
-                  { value: "pass", label: "Pass" },
+                  { value: "run", label: "Run", icon: "run", iconWidth: 15, iconHeight: 14 },
+                  { value: "pass", label: "Pass", icon: "pass", iconWidth: 15, iconHeight: 14 },
                 ]}
                 selectedOption={field.value}
                 onChange={field.onChange}
@@ -282,9 +277,9 @@ const Gameboard = () => {
             render={({ field }) => (
               <ToggleButtonGroup
                 options={[
-                  { value: "short", label: "Short" },
-                  { value: "med", label: "Medium" },
-                  { value: "long", label: "Long" },
+                  { value: "short", label: "Short", icon: "short", iconWidth: 28, iconHeight: 14 },
+                  { value: "med", label: "Medium", icon: "med", iconWidth: 28, iconHeight: 14 },
+                  { value: "long", label: "Long", icon: "long", iconWidth: 28, iconHeight: 14 },
                 ]}
                 selectedOption={field.value}
                 onChange={field.onChange}
@@ -298,12 +293,9 @@ const Gameboard = () => {
             render={({ field }) => (
               <ToggleButtonGroup
                 options={[
-                  { value: "1", label: "10" },
-                  { value: "2", label: "25" },
-                  { value: "3", label: "50" },
-                  { value: "4", label: "100" },
-                  { value: "5", label: "250" },
-                  { value: "6", label: "500" },
+                  { value: "1", label: "100", icon: "coin", iconWidth: 15, iconHeight: 14 },
+                  { value: "2", label: "250", icon: "coin", iconWidth: 15, iconHeight: 14 },
+                  { value: "3", label: "500", icon: "coin", iconWidth: 15, iconHeight: 14 },
                 ]}
                 selectedOption={field.value}
                 onChange={field.onChange}

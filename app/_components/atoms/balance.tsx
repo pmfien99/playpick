@@ -15,12 +15,21 @@ interface BalanceProps {
 }
 
 const Balance: React.FC<BalanceProps> = ({
-  textSize = "text-[100px]",
+  textSize = "text-[80px]",
   lineHeight = "leading-none",
   iconSize = "w-[18px] h-[18px]",
 }) => {
   const { user } = useUser();
   const [score, setScore] = useState<number>(0);
+
+  const formatScore = (score: number): { leadingZeros: string; mainNumber: string } => {
+    const scoreString = score.toString().padStart(8, '0');
+    const leadingZeros = scoreString.slice(0, -score.toString().length);
+    const mainNumber = scoreString.slice(-score.toString().length);
+    return { leadingZeros, mainNumber };
+  };
+
+  const { leadingZeros, mainNumber } = formatScore(score);
 
   useEffect(() => {
     if (!user.player_id) return;
@@ -62,8 +71,13 @@ const Balance: React.FC<BalanceProps> = ({
   return (
     <div className="flex items-center justify-center relative m-auto">
       <div className="relative flex items-center justify-center m-auto">
-        <p className={`text-cpb-basewhite ${textSize} ${lineHeight} [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]`}>
-          {score}
+        <p className={`${textSize} ${lineHeight} [text-shadow:0px_0px_15.65px_rgba(255,255,255,0.5)]`}>
+        <span className="inline-block text-transparent [text-shadow:0px_0px_0.9px_white,0px_0px_0.9px_white,0px_0px_0.9px_white,0px_0px_0.9px_white]">
+          {leadingZeros}
+        </span>     
+        <span className="text-cpb-basewhite ">
+        {mainNumber}
+        </span>   
         </p>
         <div className={`${iconSize} absolute top-1/2 left-0 transform -translate-y-1/2 flex items-center justify-center ml-[-18px]`}>
           <SvgCoin />

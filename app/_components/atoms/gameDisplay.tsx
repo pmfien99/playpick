@@ -50,11 +50,11 @@ const GameDisplay = () => {
         />
         {matchData?.possessionId === matchData?.awayTeamId && (
           <Image
-            src="/possession_indicator.png"
-            width={17}
-            height={17}
-            alt="possession-indicator"
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-[-8px]"
+          src="/possession_indicator.png"
+          width={24}
+          height={24}
+          alt="possession-indicator"
+          className="absolute top-1/2 right-[72px] transform -translate-y-1/2"
           />
         )}
       </div>
@@ -120,10 +120,10 @@ const GameDisplay = () => {
         {matchData?.possessionId === matchData?.homeTeamId && (
           <Image
             src="/possession_indicator.png"
-            width={17}
-            height={17}
+            width={24}
+            height={24}
             alt="possession-indicator"
-            className="absolute bottom-0 left-1/2 -translate-x-1/2 mb-[-8px]"
+            className="absolute top-1/2 left-[72px] transform -translate-y-1/2"
           />
         )}
       </div>

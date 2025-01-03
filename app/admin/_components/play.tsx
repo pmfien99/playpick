@@ -51,8 +51,8 @@ const Play = (props: PlayProps) => {
     if (props.play_id) {
       console.log("updating scores and stuff?");
       logPlayStateUpdateScores(props.play_id, matchData?.matchId || "", data.play_type, data.play_distance)
-        .then((logs) => {
-          console.log(logs);
+        .then((result) => {
+          console.log("Logs from updateScoresforPlay:", result.logs);
           return;
         })
         .catch((error) => {

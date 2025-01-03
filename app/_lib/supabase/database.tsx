@@ -261,25 +261,14 @@ export async function checkSubmissionExists(play_id: string, player_id: string) 
 }
 
 
-/**
- * Updates the scores for a given play
- * @param {string} play_id
- * @param {string} match_id
- * @param {string} actual_type
- * @param {string} actual_distance
- * @param {boolean} is_ignored
- * @returns {Promise<{ data: any; error: any }>}
- */
 export async function updateScoresforPlay(
   play_id: string,
   match_id: string,
   actual_type: string,
   actual_distance: string,
   is_ignored: boolean
-) {
+): Promise<string> {
   const supabase = createClient();
-  const maxRetries = 3;
-
   const CORRECT_MULTIPLIERS = {
     "run-short": 3,
     "pass-short": 10,
@@ -295,128 +284,78 @@ export async function updateScoresforPlay(
     .eq("play_id", play_id)
     .eq("match_id", match_id);
 
-  console.log("playerPicks", playerPicks);
-
   if (playerPicksError) {
     console.error("Error fetching player picks:", playerPicksError);
     throw playerPicksError;
   }
 
+  let resultSummary = '';
+
   for (const playerPick of playerPicks) {
-    console.log("Scoring this pick", playerPick);
     const playerId = playerPick.player_id;
-    const playerBalance = (await getCoinBalance(playerId));
-    console.log("Player balance is currently", playerBalance);
+    const playerBalance = await getCoinBalance(playerId);
+    let actionTaken = '';
 
-    // REFUND THE PLAYERS IF THE PICKS IS IGNORED
+    resultSummary += `\nProcessing Player ID: ${playerId}\n`;
+    resultSummary += `Current Balance: ${playerBalance}\n`;
+    resultSummary += `Pick Type: ${playerPick.pick_type}, Pick Distance: ${playerPick.pick_distance}\n`;
+    resultSummary += `Actual Type: ${actual_type}, Actual Distance: ${actual_distance}\n`;
+    resultSummary += `Points Wagered: ${playerPick.points_wagered}\n`;
+
     if (is_ignored) {
-      console.log("ignoring since play is ignored and refunding player");
-      try {
-        const { error: ignoreAndUpdateError } = await supabase
-          .from("player_picks")
-          .update({
-            is_ignored: true,
-            points_allocated: playerPick.points_wagered
-          })
-          .eq("pick_id", playerPick.pick_id);
-
-        if (ignoreAndUpdateError) {
-          throw new Error(`Error updating pick as ignored and setting points_allocated: ${ignoreAndUpdateError.message}`);
-        }
-
-        const newBalance = Number(playerBalance) + Number(playerPick.points_wagered);
-        console.log("new balance after refund for ignored play", newBalance);
-        await setCoinBalance(playerPick.player_id, newBalance);
-
-      } catch (error) {
-        console.error(error);
-        throw error;
+      actionTaken = 'Ignored play, refunded player.';
+      const newBalance = Number(playerBalance) + Number(playerPick.points_wagered);
+      resultSummary += `New Balance after refund: ${newBalance}\n`;
+      await setCoinBalance(playerPick.player_id, newBalance);
+      const { error } = await supabase.from("player_picks").update({
+        is_ignored: true,
+        points_allocated: playerPick.points_wagered
+      }).eq("pick_id", playerPick.pick_id);
+      if (error) {
+        resultSummary += `Error updating pick as ignored: ${error.message}\n`;
       }
-
-      continue;
-    }
-
-    // IF THEY ARE PARIALY CORRECT, REUND THE PLAYERS THEIR WAGER 
-    if (playerPick.pick_type === actual_type && playerPick.pick_distance !== actual_distance) {
-      console.log("partially correct, refunding player");
-      try {
-        const newBalance = Number(playerBalance) + Number(playerPick.points_wagered);
-        console.log("new balance after refund for partially correct play", newBalance);
-        await setCoinBalance(playerPick.player_id, newBalance);
-
-        // Update the player_pick table with the points_allocated
-        const { error: updatePickError } = await supabase
-          .from("player_picks")
-          .update({
-            is_ignored: false,
-            points_allocated: playerPick.points_wagered
-          })
-          .eq("pick_id", playerPick.pick_id);
-
-        if (updatePickError) {
-          throw new Error(`Error updating points_allocated for correct pick: ${updatePickError.message}`);
-        }
-      } catch (error) {
-        console.error(error);
-        throw error;
+    } else if (playerPick.pick_type === actual_type && playerPick.pick_distance !== actual_distance) {
+      actionTaken = 'Partially correct, refunded player.';
+      const newBalance = Number(playerBalance) + Number(playerPick.points_wagered);
+      resultSummary += `New Balance after partial refund: ${newBalance}\n`;
+      await setCoinBalance(playerPick.player_id, newBalance);
+      const { error } = await supabase.from("player_picks").update({
+        is_ignored: false,
+        points_allocated: playerPick.points_wagered
+      }).eq("pick_id", playerPick.pick_id);
+      if (error) {
+        resultSummary += `Error updating points_allocated for partial correct pick: ${error.message}\n`;
+      }
+    } else if (playerPick.pick_type === actual_type && playerPick.pick_distance === actual_distance) {
+      const outcomeKey = `${actual_type}-${actual_distance}`;
+      const multiplier = CORRECT_MULTIPLIERS[outcomeKey as keyof typeof CORRECT_MULTIPLIERS] || 0;
+      const points_allocated = playerPick.points_wagered * multiplier;
+      const newBalance = Number(playerBalance) + Number(points_allocated);
+      actionTaken = `Correct pick, allocated ${points_allocated} points.`;
+      resultSummary += `Outcome Key: ${outcomeKey}, Multiplier: ${multiplier}\n`;
+      resultSummary += `Points Allocated: ${points_allocated}, New Balance: ${newBalance}\n`;
+      await setCoinBalance(playerPick.player_id, newBalance);
+      const { error } = await supabase.from("player_picks").update({
+        is_ignored: false,
+        points_allocated: points_allocated
+      }).eq("pick_id", playerPick.pick_id);
+      if (error) {
+        resultSummary += `Error updating points_allocated for correct pick: ${error.message}\n`;
+      }
+    } else {
+      actionTaken = 'Incorrect pick, no points allocated.';
+      const { error } = await supabase.from("player_picks").update({
+        points_allocated: 0
+      }).eq("pick_id", playerPick.pick_id);
+      if (error) {
+        resultSummary += `Error updating points_allocated for incorrect pick: ${error.message}\n`;
       }
     }
 
-    // IF THEY ARE CORRECT, ALLOCATE POINTS 
-    if (playerPick.pick_type === actual_type && playerPick.pick_distance === actual_distance) {
-      console.log("correct, allocating points");
-      try {
-
-        const outcomeKey = `${actual_type}-${actual_distance}`;
-        console.log("outcomeKey", outcomeKey);
-        const multiplier = CORRECT_MULTIPLIERS[outcomeKey as keyof typeof CORRECT_MULTIPLIERS] || 0;
-        console.log("multiplier", multiplier);
-
-        const points_allocated = playerPick.points_wagered * multiplier;
-        const newBalance = Number(playerBalance) + Number(points_allocated);
-        console.log("new balance after correct play", newBalance);
-        await setCoinBalance(playerPick.player_id, newBalance);
-
-        // Update the player_pick table with the points_allocated
-        const { error: updatePickError } = await supabase
-          .from("player_picks")
-          .update({
-            is_ignored: false,
-            points_allocated: points_allocated
-          })
-          .eq("pick_id", playerPick.pick_id);
-
-        if (updatePickError) {
-          throw new Error(`Error updating points_allocated for correct pick: ${updatePickError.message}`);
-        }
-      } catch (error) {
-        console.error(error);
-        throw error;
-      }
-    }
-    
-
-    // IF IT GETS HERE THE PLAYER HAS LOST
-    if (playerPick.pick_type !== actual_type || playerPick.pick_distance !== actual_distance) {
-      console.log("lost, updating points_allocated to 0");
-      try {
-        const { error: updatePickError } = await supabase
-          .from("player_picks")
-          .update({
-            points_allocated: 0
-          })
-          .eq("pick_id", playerPick.pick_id);
-  
-        if (updatePickError) {
-          throw new Error(`Error updating points_allocated for lost pick: ${updatePickError.message}`);
-        }
-      } catch (error) {
-        console.error(error);
-        throw error;
-      }
-    
-    }
+    resultSummary += `Action Taken: ${actionTaken}\n`;
   }
+
+  return resultSummary;
 }
 
 /**
@@ -454,9 +393,9 @@ export async function logPlayStateUpdateScores(
       .eq("play_id", play_id);
     if (error) throw error;
 
-    updateScoresforPlay(play_id, match_id, play_type, play_distance, is_ignored);
+    const logs = await updateScoresforPlay(play_id, match_id, play_type, play_distance, is_ignored);
 
-    return data;
+    return { data, logs };
   } catch (error) {
     console.error("Error logging play:", error);
     throw error;

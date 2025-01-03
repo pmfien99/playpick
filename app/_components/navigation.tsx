@@ -46,7 +46,7 @@ const Navigation = ({ theme }: NavigationProps) => {
   return (
     <>
       <div
-        className={`px-5 py-5 relative flex flex-row justify-between items-center ${
+        className={`px-5 py-5 relative flex flex-row justify-between items-center z-50 ${
           isDarkMode ? "text-cpb-basewhite" : "text-cpb-baseblack"
         }`}
       >

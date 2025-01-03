@@ -262,8 +262,8 @@ const Gameboard = () => {
             render={({ field }) => (
               <ToggleButtonGroup
                 options={[
-                  { value: "run", label: "Run", icon: "run", iconWidth: 15, iconHeight: 14 },
-                  { value: "pass", label: "Pass", icon: "pass", iconWidth: 15, iconHeight: 14 },
+                  { value: "run", label: "Run", icon: "run", iconWidth: 24, iconHeight: 24 },
+                  { value: "pass", label: "Pass", icon: "pass", iconWidth: 24, iconHeight: 24 },
                 ]}
                 selectedOption={field.value}
                 onChange={field.onChange}
@@ -293,9 +293,9 @@ const Gameboard = () => {
             render={({ field }) => (
               <ToggleButtonGroup
                 options={[
-                  { value: "1", label: "100", icon: "coin", iconWidth: 15, iconHeight: 14 },
-                  { value: "2", label: "250", icon: "coin", iconWidth: 15, iconHeight: 14 },
-                  { value: "3", label: "500", icon: "coin", iconWidth: 15, iconHeight: 14 },
+                  { value: "1", label: "100", icon: "coin", iconWidth: 24, iconHeight: 24 },
+                  { value: "2", label: "250", icon: "coin", iconWidth: 24, iconHeight: 24 },
+                  { value: "3", label: "500", icon: "coin", iconWidth: 24, iconHeight: 24 },
                 ]}
                 selectedOption={field.value}
                 onChange={field.onChange}

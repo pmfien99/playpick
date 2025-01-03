@@ -32,7 +32,7 @@ export default function Page() {
 
   return (
     <div
-      className={`relative bg-cover bg-top ${getBackgroundStyle()} shadow-[0_0_50px_0_rgba(0,0,0,0.25)] min-h-full`}
+      className={`relative bg-cover bg-top ${getBackgroundStyle()} shadow-[0_0_50px_0_rgba(0,0,0,0.25)] min-h-full z-50`}
     >
       <Navigation theme={"dark"} />
       {activeView === "play" && <PlayView />}
@@ -114,6 +114,7 @@ export default function Page() {
   display: flex;
   justify-content: space-between;
   padding: 0.5rem 2rem;
+  z-index: 50;
 }
 
 @media (min-width: 768px) {
@@ -127,4 +128,3 @@ export default function Page() {
     </div>
   );
 }
-

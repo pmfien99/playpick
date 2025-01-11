@@ -5,7 +5,7 @@ import Image from "next/image";
 
 const WinView = () => {
   return (
-    <div>
+    <div className="pb-20">
       <div className="flex flex-col items-center justify-center align-center">
         <SvgIcon className="w-[153px] h-[115px] text-[#8971D7]" name="win" />
         <p className="text-[20px] font-flick text-cpb-basewhite drop-shadow-md">

@@ -5,7 +5,7 @@ import Image from "next/image";
 
 const ProfileView = () => {
   return (
-    <div>
+    <div className="pb-20">
       <div className="flex flex-col items-center justify-center align-center text-center">
       <SvgIcon className="w-[153px] h-[115px] text-[#90CAC2]" name="profile" />
       <p className="text-[20px] font-flick text-cpb-basewhite drop-shadow-md">Coming Soon</p>

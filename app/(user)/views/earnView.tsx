@@ -53,19 +53,19 @@ const EarnView = () => {
   const missionsData = [
     {
       image: "/downmarker-4.svg",
-      heading: "Achievement 1",
-      subheading: "Subheading 1",
-      progress: 10,
-      goal: 100,
-      reward: 1000,
+      heading: "FOLLOW US",
+      subheading: "Follow us on Twitter",
+      progress: 0,
+      goal: 1,
+      reward: 500,
     },
     {
       image: "/downmarker-4.svg",
-      heading: "Achievement 2",
-      subheading: "Subheading 2",
-      progress: 20,
-      goal: 200,
-      reward: 2000,
+      heading: "SHARE US",
+      subheading: "Share us on Facebook",
+      progress: 0,
+      goal: 1,
+      reward: 1000,
     },
   ];
 

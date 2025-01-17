@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { Chakra_Petch } from "@next/font/google";
 import { UserProvider } from "@/app/_context/usercontext";
 import Navigation from "@/app/_components/navigation";
+import { ViewProvider } from "../_context/viewContext";
 
 import "@/app/globals.css";
 
@@ -19,11 +20,12 @@ export default function RootLayout({
 }) {
   return (
     <UserProvider>
+      <ViewProvider>
       <html lang="en">
         <body className={`${chakraPetch.className} bg-white min-h-full`}>
           <main className="flex content-center justify-center bg-white min-h-full">
             <div className="flex flex-col w-full max-w-[430px]">
-              <Navigation theme={"light"}></Navigation>
+              <Navigation theme={"light"} sideNav={false}></Navigation>
               <div className="flex flex-col items-center w-full">
                 <div className="h-20 flex justify-center items-center w-full">
                   <svg
@@ -45,6 +47,7 @@ export default function RootLayout({
           </main>
         </body>
       </html>
+      </ViewProvider>
     </UserProvider>
   );
 }

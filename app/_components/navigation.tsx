@@ -8,13 +8,17 @@ import { redirect } from "next/navigation";
 import { useRouter } from "next/navigation";
 import SvgIcon from "./icons/svgIcon";
 import Balance from "./atoms/balance";
+import { useView } from "../_context/viewContext";
+import { ActiveView } from "../_context/viewContext";
 
 type NavigationProps = {
   theme: "light" | "dark";
+  sideNav?: boolean;
 };
 
-const Navigation = ({ theme }: NavigationProps) => {
+const Navigation = ({ theme, sideNav = true }: NavigationProps) => {
   const { user } = useUser();
+  const { activeView, setActiveView } = useView();
   const isDarkMode = theme === "dark";
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -27,6 +31,15 @@ const Navigation = ({ theme }: NavigationProps) => {
 
   const togglePopup = () => {
     setIsPopupOpen(!isPopupOpen);
+  };
+
+  const handleViewChange = (view: ActiveView) => {
+    if (view === activeView) {
+      setIsSideNavOpen(false);
+    } else {
+      setActiveView(view);
+      setIsSideNavOpen(false);
+    }
   };
 
   // const toggleFeedback = () => {
@@ -51,6 +64,7 @@ const Navigation = ({ theme }: NavigationProps) => {
         }`}
       >
         <div className="flex flex-row gap-2 justify-center items-center">
+          {sideNav && (
           <button onClick={() => setIsSideNavOpen(true)}>
             <svg
               width="12"
@@ -73,7 +87,8 @@ const Navigation = ({ theme }: NavigationProps) => {
                 stroke-width="0.5"
               />
             </svg>
-          </button>
+            </button>
+          )}
           <Link href="/" className="h-3">
             <svg
               width="auto"
@@ -114,20 +129,6 @@ const Navigation = ({ theme }: NavigationProps) => {
               />
             </svg>
           </button>
-          {/* <button
-            onClick={toggleFeedback}
-            className="h-4 w-4 aspect-square flex justify-center items-center"
-          >
-            <svg
-              width="14"
-              height="12"
-              viewBox="0 0 14 12"
-              fill={isDarkMode ? "#F9F9FB" : "#1F1F1F"}
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path d="M14 4.37863V8.54067C14 9.20023 13.4579 9.73603 12.7907 9.73603H11.7028C11.5957 9.73603 11.5081 9.82203 11.5081 9.92845V11.5686C11.5081 11.735 11.4205 11.8755 11.2709 11.9516C11.1213 12.0271 10.9541 12.0135 10.8189 11.9163L7.82949 9.77249C7.79632 9.74898 7.75688 9.73537 7.71557 9.73537H6.36727C6.31782 9.73537 6.26899 9.73227 6.22017 9.72608L6.06619 9.7069L7.78558 8.47441H9.36984C10.4227 8.47441 11.279 7.62738 11.279 6.58729V3.18317H12.7906C13.4579 3.18317 13.9999 3.71898 13.9999 4.37853L14 4.37863ZM7.60781 8.12753L3.95603 10.7459C3.77576 10.8752 3.55731 10.8919 3.35887 10.7923C3.16044 10.6927 3.04528 10.5071 3.04528 10.2868L3.04465 8.28286C3.04465 8.17582 2.95765 8.09044 2.84999 8.09044H1.5211C0.682952 8.09044 0 7.41665 0 6.58756V1.50288C0 0.673803 0.682284 0 1.5211 0H9.36975C10.2079 0 10.8909 0.67379 10.8909 1.50288V6.58756C10.8909 7.41664 10.2086 8.09044 9.36975 8.09044H7.72166C7.68035 8.09044 7.64092 8.10344 7.60774 8.12757L7.60781 8.12753ZM8.28633 4.23753C8.39399 4.23753 8.481 4.15214 8.481 4.04511C8.481 3.93807 8.39399 3.85269 8.28633 3.85269H2.60401C2.49635 3.85269 2.40934 3.93807 2.40934 4.04511C2.40934 4.15153 2.49635 4.23753 2.60401 4.23753H8.28633Z" />
-            </svg>
-          </button> */}
         </div>
         {user.is_anon ? (
           <div className="flex flex-row gap-2">
@@ -135,7 +136,7 @@ const Navigation = ({ theme }: NavigationProps) => {
             <Link className="text-base font-black" href="/sign-in">
               Log In
             </Link>
-        </div>
+          </div>
         ) : (
           <div>
             <div className="flex items-center gap-4">
@@ -291,11 +292,14 @@ const Navigation = ({ theme }: NavigationProps) => {
                   </p>
                   <br></br>
                   <p className="text-regular font-medium text-cpb-baseblack">
-                    <strong>Get coins back</strong> for partial wins (e.g., short vs. long pass). Keels, spikes, punts, field goals, and penalties push.
+                    <strong>Get coins back</strong> for partial wins (e.g.,
+                    short vs. long pass). Keels, spikes, punts, field goals, and
+                    penalties push.
                   </p>
                   <br></br>
                   <p className="text-regular font-medium text-cpb-baseblack">
-                    <strong>Lose coins</strong> on incorrect predictions, sacks, interceptions, bad snaps, or fumbles behind the LOS.
+                    <strong>Lose coins</strong> on incorrect predictions, sacks,
+                    interceptions, bad snaps, or fumbles behind the LOS.
                   </p>
                   <br></br>
                   <button
@@ -315,83 +319,6 @@ const Navigation = ({ theme }: NavigationProps) => {
         </div>
       )}
 
-      {/* {isFeedbackOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-[9999]"
-          onClick={toggleFeedback}
-        >
-          <div
-            className="bg-white py-6 px-4 rounded-lg shadow-lg max-w-[430px] w-[90vw] max-h-[90vh] overflow-y-auto text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={toggleFeedback}
-              className="h-6 w-6 aspect-square flex justify-center items-center m-auto"
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 17 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M8.26953 16C12.6855 16 16.2695 12.416 16.2695 8C16.2695 3.584 12.6855 0 8.26953 0C3.85353 0 0.269531 3.584 0.269531 8C0.269531 12.416 3.85353 16 8.26953 16ZM8.26953 0.64C12.3229 0.64 15.6295 3.94667 15.6295 8C15.6295 12.0533 12.3229 15.36 8.26953 15.36C4.2162 15.36 0.909531 12.0533 0.909531 8C0.909531 3.94667 4.2162 0.64 8.26953 0.64Z"
-                  fill="#1F1F1F"
-                />
-                <path
-                  d="M5.6971 10.5877C5.76312 10.6469 5.85104 10.6666 5.93904 10.6666C6.02704 10.6666 6.11504 10.6469 6.18098 10.5877L8.60058 8.41887L11.0202 10.5877C11.0862 10.6469 11.1741 10.6666 11.2621 10.6666C11.3501 10.6666 11.4381 10.6469 11.5041 10.5877C11.636 10.4694 11.636 10.292 11.5041 10.1737L9.08446 8.00484L11.5041 5.836C11.636 5.71771 11.636 5.54025 11.5041 5.42197C11.3721 5.30368 11.1741 5.30368 11.0422 5.42197L8.62255 7.5908L6.20296 5.42197C6.071 5.30368 5.87302 5.30368 5.74106 5.42197C5.6091 5.54025 5.60909 5.71772 5.74106 5.836L8.16065 8.00484L5.74106 10.1737C5.56513 10.2723 5.56513 10.4694 5.6971 10.5877Z"
-                  fill="#1F1F1F"
-                />
-              </svg>
-            </button>
-            <div className="flex flex-col gap-8">
-              <div className="h-20 mb-[-32px] flex justify-center items-center w-full">
-                <svg
-                  width="169"
-                  height="35"
-                  viewBox="0 0 169 35"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M22.409 0.049997C24.109 0.049997 25.3923 0.649997 26.259 1.85C27.1257 3.01667 27.3257 4.43333 26.859 6.1L23.009 20.6C22.5423 22.2667 21.559 23.7 20.059 24.9C18.559 26.1 16.959 26.7 15.259 26.7H9.95898L7.65898 35H0.808984L8.40898 5.6L11.659 7.45L6.80898 -2.38419e-06L22.409 0.049997ZM15.759 20.6L19.709 5.75H13.359L15.109 7.55L11.959 19.2H8.75898L11.609 20.6H15.759ZM28.9855 28.9H39.8355L35.1855 35H22.7855L30.6855 5.6L33.8855 7.45L29.0355 -2.38419e-06H39.3855L31.9855 27.65L28.9855 28.9ZM49.2984 -2.38419e-06H63.0484L59.4484 35H52.1984L52.7484 30.6H45.0984L46.7984 31.95L45.5484 35H38.2984L50.9984 5.6L54.1984 7.45L49.2984 -2.38419e-06ZM53.5484 24.15L55.1484 11.65L49.9984 24.15H53.5484ZM83.8223 -2.38419e-06H91.0223L87.3223 13.95C86.7889 15.85 85.7889 17.6 84.3223 19.2C82.8889 20.7667 81.2223 21.9333 79.3223 22.7L76.0223 35H68.7723L71.5223 24.8H75.7223L71.9723 23.05C70.2389 22.3833 68.9889 21.2167 68.2223 19.55C67.4889 17.8833 67.4056 16.0167 67.9723 13.95L70.1723 5.6L73.4223 7.45L68.5723 -2.38419e-06H78.9723L74.2723 17.55H82.7723L79.5223 16L83.8223 -2.38419e-06ZM105.221 0.049997C106.921 0.049997 108.205 0.649997 109.071 1.85C109.938 3.01667 110.138 4.43333 109.671 6.1L105.821 20.6C105.355 22.2667 104.371 23.7 102.871 24.9C101.371 26.1 99.7715 26.7 98.0715 26.7H92.7715L90.4715 35H83.6215L91.2215 5.6L94.4715 7.45L89.6215 -2.38419e-06L105.221 0.049997ZM98.5715 20.6L102.521 5.75H96.1715L97.9215 7.55L94.7715 19.2H91.5715L94.4215 20.6H98.5715ZM111.848 -2.38419e-06H122.198L112.748 35H105.598L113.498 5.6L116.698 7.45L111.848 -2.38419e-06ZM133.098 6.1L127.448 27.3L124.148 28.9H136.598L135.448 35H124.098C122.398 35 121.115 34.4167 120.248 33.25C119.381 32.05 119.181 30.6 119.648 28.9L125.898 5.6L129.148 7.45L124.248 -2.38419e-06H144.798L142.048 6.1H133.098ZM168.094 -2.38419e-06L158.994 13.4L154.594 14.95L157.894 15V35H150.494L150.194 22.65L153.394 21.65H149.844L146.244 35H139.094L146.994 5.6L150.194 7.45L145.344 -2.38419e-06H155.694L151.694 14.8L161.894 -2.38419e-06H168.094Z"
-                    fill="#0C1D17"
-                  />
-                </svg>
-              </div>
-              <div className="justify-center items-center text-center">
-                <h2 className="text-lg sm:text-2xl font-regular text-cpb-darkgreen flex flex-col gap-0 font-flick">
-                  Leave us some feedback!
-                </h2>
-
-                <Link
-                  className="relative flex justify-center items-center bg-cpb-darkgreen text-white px-4 py-2 rounded-md w-full h-14 font-bold text-regular mt-7"
-                  href="https://docs.google.com/forms/d/e/1FAIpQLScFFoHfuM84CPJeAv5QqZO_fQhAUEo2_tM4s55-CSiUP3wE3w/viewform"
-                >
-                  <div className="flex justify-center items-center relative">
-                    <p>Take 3-Min Google Survey</p>
-                    <div className="absolute right-0 w-2 h-2 mt-[-16px] mr-[-8px]">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="100%"
-                        height="100%"
-                        viewBox="0 0 6 6"
-                        fill="none"
-                      >
-                        <path
-                          d="M5.5 1C5.5 0.723857 5.27614 0.5 5 0.5L0.5 0.5C0.223858 0.5 1.94898e-07 0.723857 2.37044e-07 1C2.79191e-07 1.27614 0.223858 1.5 0.5 1.5H4.5V5.5C4.5 5.77614 4.72386 6 5 6C5.27614 6 5.5 5.77614 5.5 5.5L5.5 1ZM2.35355 4.35355L5.35355 1.35355L4.64645 0.646446L1.64645 3.64645L2.35355 4.35355Z"
-                          fill="#F9F9FB"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )} */}
 
       {/* Background Overlay */}
       <div
@@ -401,10 +328,10 @@ const Navigation = ({ theme }: NavigationProps) => {
         onClick={toggleSideNav}
       ></div>
       {/*SIDENAV */}
-      <div
-        className={`absolute top-0 left-0 h-full bg-[#101010] z-[9999] transition-transform duration-300 ${
-          isSideNavOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+      <nav
+          className={`absolute top-0 left-0 h-full bg-[#101010] z-[9999] transition-transform duration-300 ${
+            isSideNavOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex justify-center items-center h-full">
           <div className="h-full bg-[#101010] mr-auto p-4 gap-5 flex flex-col text-cpb-basewhite text-regular font-semibold capitalize">
@@ -452,31 +379,69 @@ const Navigation = ({ theme }: NavigationProps) => {
             <div className="h-[1px] w-full bg-cpb-basewhite opacity-25"></div>
             {/* MAIN NAVIGATION */}
             <div className="flex flex-col gap-2 justify-center items-start">
-              <Link className="flex justify-center items-center gap-2" href="/">
+              <Link
+                onClick={() => handleViewChange("play")}
+                className={`flex justify-center items-center gap-2 ${
+                  activeView === "play"
+                    ? "text-[#00D4A1]"
+                    : "text-cpb-basewhite"
+                }`}
+                href="/"
+              >
                 <div className="w-4 h-4">
                   <SvgIcon name="play" />
                 </div>
                 <p>PLAY</p>
               </Link>
-              <Link className="flex justify-center items-center gap-2" href="/">
+              <Link
+                onClick={() => handleViewChange("standings")}
+                className={`flex justify-center items-center gap-2 ${
+                  activeView === "standings"
+                    ? "text-[#5392D3]"
+                    : "text-cpb-basewhite"
+                }`}
+                href="/"
+              >
                 <div className="w-4 h-4">
                   <SvgIcon name="standings" />
                 </div>
                 <p>STANDINGS</p>
               </Link>
-              <Link className="flex justify-center items-center gap-2" href="/">
+              <Link
+                onClick={() => handleViewChange("earn")}
+                className={`flex justify-center items-center gap-2 ${
+                  activeView === "earn"
+                    ? "text-[#FED45F]"
+                    : "text-cpb-basewhite"
+                }`}
+                href="/"
+              >
                 <div className="w-4 h-4">
                   <SvgIcon name="earn" />
                 </div>
                 <p>EARN</p>
               </Link>
-              <Link className="flex justify-center items-center gap-2" href="/">
+              <Link
+                onClick={() => handleViewChange("win")}
+                className={`flex justify-center items-center gap-2 ${
+                  activeView === "win" ? "text-[#8971D7]" : "text-cpb-basewhite"
+                }`}
+                href="/"
+              >
                 <div className="w-4 h-4">
                   <SvgIcon name="win" />
                 </div>
                 <p>WIN</p>
               </Link>
-              <Link className="flex justify-center items-center gap-2" href="/">
+              <Link
+                onClick={() => handleViewChange("profile")}
+                className={`flex justify-center items-center gap-2 ${
+                  activeView === "profile"
+                    ? "text-[#90CAC2]"
+                    : "text-cpb-basewhite"
+                }`}
+                href="/"
+              >
                 <div className="w-4 h-4">
                   <SvgIcon name="profile" />
                 </div>
@@ -486,38 +451,45 @@ const Navigation = ({ theme }: NavigationProps) => {
             <div className="h-[1px] w-full bg-cpb-basewhite opacity-25"></div>
             {/* OTHER NAVIGATION */}
             <div className="flex flex-col gap-2 justify-center items-start">
-              <Link className="flex justify-center items-center gap-2" href="/">
-                <div className="w-4 h-4">
-                  <SvgIcon name="win" />
-                </div>
-                <p>RULES</p>
-              </Link>
-              <Link className="flex justify-center items-center gap-2" href="/">
-                <div className="w-4 h-4">
-                  <SvgIcon name="profile" />
-                </div>
-                <p>FEEDBACK</p>
-              </Link>
+              {!user.is_anon ? (
+                <Link
+                  className="flex justify-center items-center gap-2"
+                  href="/"
+                  onClick={() => handleSignOut()}
+                >
+                  <div className="w-4 h-4">
+                    <SvgIcon name="signinout" />
+                  </div>
+                  <p>SIGN OUT</p>
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    className="flex justify-center items-center gap-2"
+                    href="/sign-in"
+                  >
+                    <div className="w-4 h-4">
+                      <SvgIcon name="signinout" />
+                    </div>
+                    <p>SIGN IN</p>
+                  </Link>
+                  <Link
+                    className="flex justify-center items-center gap-2"
+                    href="/sign-up"
+                  >
+                    <div className="w-4 h-4">
+                      <SvgIcon name="signup" />
+                    </div>
+                    <p>SIGN UP</p>
+                  </Link>
+                </>
+              )}
             </div>
             <div className="h-[1px] w-full bg-cpb-basewhite opacity-25"></div>
             {/* BOTTOM NAVIGATION */}
-            <div className="flex flex-col gap-2 justify-center items-start">
-              <Link className="flex justify-center items-center gap-2" href="/">
-                <div className="w-4 h-4">
-                  <SvgIcon name="play" />
-                </div>
-                <p>TERMS OF USE</p>
-              </Link>
-              <Link className="flex justify-center items-center gap-2" href="/">
-                <div className="w-4 h-4">
-                  <SvgIcon name="standings" />
-                </div>
-                <p>PRIVACY</p>
-              </Link>
-            </div>
           </div>
         </div>
-      </div>
+      </nav>
     </>
   );
 };

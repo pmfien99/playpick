@@ -4,6 +4,7 @@ import React from "react";
 import { Chakra_Petch } from "@next/font/google";
 import { UserProvider } from "@/app/_context/usercontext";
 import { GameProvider } from "@/app/_context/gameContext";
+import { ViewProvider } from "@/app/_context/viewContext";
 
 import "@/app/globals.css";
 
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <UserProvider>
       <GameProvider>
+        <ViewProvider>
             <html lang="en">
               <body
               className={`${chakraPetch.className} bg-cpb-basewhite min-h-full`}
@@ -31,6 +33,7 @@ export default function RootLayout({
               </main>
               </body>
             </html>
+        </ViewProvider>
       </GameProvider>
     </UserProvider>
   );

@@ -10,9 +10,10 @@ import Link from "next/link";
 import SvgIcon from "@/app/_components/icons/svgIcon";
 import useSound from "use-sound";
 import { useState } from "react";
+import { useView } from "@/app/_context/viewContext";
 
 export default function Page() {
-  const [activeView, setActiveView] = useState("play");
+  const { activeView, setActiveView } = useView();
   const [playToggleSound] = useSound("/sfx/tab-switch.wav");
 
   const getBackgroundStyle = () => {
@@ -91,7 +92,7 @@ export default function Page() {
         </Link>
         <Link
           className={`flex flex-col items-center justify-center align-center ${
-            activeView === "profile" ? "text-[#F9F9FB]" : "text-[#8B8B8C]"
+            activeView === "profile" ? "text-[#90CAC2]" : "text-[#8B8B8C]"
           }`}
           href="/"
           onClick={() => {

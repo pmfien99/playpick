@@ -543,12 +543,9 @@ export async function playerSubmitPlay(
   const supabase = createClient();
 
   const betValues = {
-    1: 10,
-    2: 25,
-    3: 50,
-    4: 100,
-    5: 250,
-    6: 500,
+    1: 100,
+    2: 250,
+    3: 500,
   };
 
   try {
